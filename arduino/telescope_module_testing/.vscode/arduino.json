@@ -1,6 +1,0 @@
-{
-    "board": "arduino:avr:micro",
-    "programmer": "avrispmkii",
-    "port": "COM14",
-    "sketch": "telescope_module_testing.ino"
-}
