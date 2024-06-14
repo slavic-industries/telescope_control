@@ -1,6 +1,8 @@
+
+
 #include "si5351.h"
 
-SI5351::SI5351(uint8_t i2c_addr)
+SI5351::SI5351(uint8_t i2c_device, uint8_t i2c_addr)
 {
   m_si5351Config.initialised = false;
   m_si5351Config.crystalFreq = SI5351_CRYSTAL_FREQ_25MHZ;
@@ -11,6 +13,7 @@ SI5351::SI5351(uint8_t i2c_addr)
   m_si5351Config.pllb_configured = false;
   m_si5351Config.pllb_freq = 0;
   m_si5351Config.i2c_addr = i2c_addr;
+  m_si5351Config.i2c_device = i2c_device;
 
   for (uint8_t i = 0; i < 3; i++) {
     lastRdivValue[i] = 0;
@@ -19,13 +22,10 @@ SI5351::SI5351(uint8_t i2c_addr)
 
 uint8_t SI5351::begin()
 {
-  m_si5351Config.i2c_td = wiringPiI2CSetup(m_si5351Config.i2c_addr);
-  if (m_si5351Config.i2c_td  == -1) {
-      std::cerr << "Failed to initialize I2C communication." << std::endl;
-      return -1;
+  if (gpioInitialise() < 0) {
+    std::cerr << "pigpio initialization failed" << std::endl;
+    return 1;
   }
-
-  std::cout << m_si5351Config.i2c_td << std::endl;
   
   // Disable all outputs before setting registers
   enableOutputs(false);
@@ -292,15 +292,44 @@ uint8_t SI5351::enableOutputs(bool enabled)
     return write8(REG_3_OUTPUT_ENABLE_CONTROL, enabled ? 0x00 : 0xFF);
 }
 
-uint8_t SI5351::read8(uint8_t address)
+uint8_t SI5351::read8(uint8_t reg)
 {
-    uint8_t buffer;
-    buffer = wiringPiI2CReadReg8(m_si5351Config.i2c_td, address);
-
-    return buffer;
+  uint16_t ret_val;
+  uint16_t i2c_handle = i2cOpen(m_si5351Config.i2c_device, m_si5351Config.i2c_addr, 0);
+  if (i2c_handle) {
+      std::cerr << "Failed to initialize I2C communication. Error: " << ret_val << std::endl;
+      return -1;
+  }
+  ret_val = i2cReadByteData(i2c_handle, reg);
+  if (ret_val < 0) {
+      std::cerr << "Failed to read data with I2C. Error: " << ret_val << std::endl;
+      return -1;
+  }
+  ret_val = i2cClose(i2c_handle);
+  if (ret_val) {
+      std::cerr << "Failed to deinitialize I2C communication. Error: " << ret_val << std::endl;
+      return -1;
+  }
+  return 0;
 }
 
 uint8_t SI5351::write8(uint8_t reg, uint8_t value)
 {
-    return wiringPiI2CWriteReg8(m_si5351Config.i2c_td, reg, value);
+  uint16_t ret_val;
+  uint16_t i2c_handle = i2cOpen(m_si5351Config.i2c_device, m_si5351Config.i2c_addr, 0);
+  if (i2c_handle) {
+      std::cerr << "Failed to initialize I2C communication. Error: " << ret_val << std::endl;
+      return -1;
+  }
+  ret_val = i2cWriteByteData(i2c_handle, reg, value);
+  if (ret_val) {
+      std::cerr << "Failed to send data with I2C. Error: " << ret_val << std::endl;
+      return -1;
+  }
+  ret_val = i2cClose(i2c_handle);
+  if (ret_val) {
+      std::cerr << "Failed to deinitialize I2C communication. Error: " << ret_val << std::endl;
+      return -1;
+  }
+  return 0;
 }

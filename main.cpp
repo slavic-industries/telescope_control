@@ -11,6 +11,7 @@
 #define SPI_CHANNEL 0
 #define SPI_SPEED 1000000  // 1 MHz
 
+#define HOST_I2C_DEVICE 1
 #define SI5351_ADDR 0x60
 
 
@@ -18,12 +19,12 @@
 int main() {
 
 
-    SI5351 clock_generator = SI5351(SI5351_ADDR);
+    SI5351 clock_generator = SI5351(HOST_I2C_DEVICE, SI5351_ADDR);
 
     if (clock_generator.begin())
     {
       std::cout << "No SI5351 detected. Check your wiring or I2C ADDR!" << std::endl;
-      while (1);
+      return -1;
     }
 
     clock_generator.setupPLL(SI5351_PLL_B, 24, 2, 3);

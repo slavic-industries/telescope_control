@@ -1,5 +1,5 @@
 output: main.o si5351.o
-	g++ main.o si5351.o -lwiringPi -o output
+	g++ main.o si5351.o -lpigpio -o output
 
 main.o: main.cpp
 	g++ -c main.cpp

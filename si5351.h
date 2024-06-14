@@ -1,11 +1,11 @@
 /*
- * @file Adafruit_SI5351.h
+ * @file si5351.h
  */
 
 #ifndef _SI5351_H_
 #define _SI5351_H_
 
-#include <wiringPiI2C.h>
+#include <pigpio.h>
 #include <cassert>
 #include <iostream>
 #include <cmath>
@@ -260,7 +260,8 @@ typedef struct {
   bool pllb_configured;             //!< Phase-locked loop B configured
   uint32_t pllb_freq;               //!< Phase-locked loop B frequency
   uint8_t i2c_addr;                 //!< I2C Address for the SI5351 
-  uint16_t i2c_td;                       //!< I2C Target device
+  uint8_t i2c_device;               //!< I2C Device ID on the host
+  uint16_t i2c_handle;              //!< I2C Target device
 } si5351Config_t;
 
 /*!
@@ -268,7 +269,7 @@ typedef struct {
  */
 class SI5351 {
 public:
-  SI5351(uint8_t i2c_addr); //!< SI5351 object
+  SI5351(uint8_t i2c_device, uint8_t i2c_addr); //!< SI5351 object
 
   uint8_t begin();
   uint8_t setClockBuilderData(void);
