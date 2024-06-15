@@ -8,6 +8,7 @@
 #include <cmath>
 #include "si5351.h"
 #include "tmc2130.h"
+#include "tmc429.h"
 
 #define SPI_CHANNEL 1
 #define SPI_SPEED 1000000  // 1 MHz
@@ -16,6 +17,7 @@
 #define SI5351_ADDR 0x60
 
 #define TMC2130_CS_PIN 8
+#define TMC429_CS_PIN 7
 
 
 
