@@ -8,6 +8,8 @@
 #include <pigpio.h>
 #include <iostream>
 
+const static uint8_t VERSION = 0x11;
+
 
 enum REGISTER{
     GCONF = 0x00,
@@ -43,6 +45,18 @@ enum REGISTER{
     LOST_STEPS = 0x73,
 };
 
+enum {
+    DRV_STATUS_NO_CONNECTION,
+    DRV_STATUS_STANDSTILL,
+    DRV_STATUS_OPEN_LOAD_PHASE_B,
+    DRV_STATUS_OPEN_LOAD_PHASE_A,
+    DRV_STATUS_SHORT_TO_GND_PHASE_B,
+    DRV_STATUS_SHORT_TO_GND_PHASE_A,
+    DRV_STATUS_OVER_TEMP_PREWARNING,
+    DRV_STATUS_OVER_TEMP,
+    STALL_DETECTION
+};
+
 
 
 typedef struct {
@@ -56,7 +70,8 @@ class TMC2130{
     public:
         TMC2130(int16_t cs_pin, uint8_t spi_channel, uint32_t spi_speed);
         uint8_t begin();
-        uint8_t test_connection();
+        uint32_t check_drv_status();
+        void set_rms_current();
 
     private:
 
