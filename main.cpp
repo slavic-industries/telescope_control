@@ -25,7 +25,7 @@ int main() {
 
   SI5351 clock_generator = SI5351(HOST_I2C_DEVICE, SI5351_ADDR);
 
-  TMC2130 stepper_driver = TMC2130(TMC2130_CS_PIN, SPI_CHANNEL, SPI_SPEED);
+  TMC2130 stepper_driver;
 
   if (clock_generator.begin())
   {
@@ -40,13 +40,14 @@ int main() {
   std::cout << "SI5351 setup and configuration complete!" << std::endl;
 
 
-  if(stepper_driver.begin())
+  if(stepper_driver.setup(TMC2130_CS_PIN, SPI_CHANNEL))
   {
     std::cerr << "Stepper driver initialization failed." << std::endl;
     return -1;
   }
+  if(stepper_driver.communicating()) std::cout << "TMC2130 setup and configuration complete!" << std::endl;
 
-  stepper_driver.check_drv_status();
+
 
   // while(1)
   // {
