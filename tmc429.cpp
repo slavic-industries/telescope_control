@@ -3,19 +3,42 @@
 //
 // Authors:
 // Peter Polidoro peter@polidoro.io
+//
+// Modified to work with pigpio library
 // ----------------------------------------------------------------------------
 #include "tmc429.h"
+#include <bitset>
 
+TMC429::TMC429()
+{
+  // std::cerr << "TMC429 object created" << std::endl;
+}
 
-void TMC429::setup(size_t chip_select_pin,
-  uint8_t clock_frequency_mhz)
+TMC429::~TMC429()
+{ 
+  // if(initialized)
+  // {
+  //   spiClose(spi_handle);
+  //   initialized = false;
+  // }
+  // std::cerr << "TMC429 object destroyed" << std::endl;
+}
+
+uint8_t TMC429::setup(size_t chip_select_pin, uint8_t spi_device)
 {
   chip_select_pin_ = chip_select_pin;
+  spi_channel = spi_device;
 
-  pinMode(chip_select_pin_,OUTPUT);
-  digitalWrite(chip_select_pin_,HIGH);
+  if (gpioInitialise() < 0) {
+    std::cerr << "pigpio initialization failed" << std::endl;
+    return 1;
+  }
 
-  specifyClockFrequencyInMHz(clock_frequency_mhz);
+  gpioSetMode(chip_select_pin_,PI_OUTPUT);
+  gpioWrite(chip_select_pin_,PI_HIGH);
+
+  spi_handle = spiOpen(spi_channel, SPI_CLOCK, 0x03);
+  std::cout << "TMC429 SPI Handle (setup): " << std::hex << spi_handle << std::endl;
 
   for (uint8_t motor=0; motor<MOTOR_COUNT; ++motor)
   {
@@ -23,13 +46,15 @@ void TMC429::setup(size_t chip_select_pin,
     ramp_div_[motor] = 0;
   }
 
-  spiBegin();
-
   setStepDiv(STEP_DIV_MAX);
 
   stopAll();
 
   initialize();
+
+  initialized = true;
+
+  return 0;
 }
 
 bool TMC429::communicating()
@@ -651,14 +676,18 @@ void TMC429::setStepDirOutput()
 
 uint32_t TMC429::readRegister(uint8_t smda,
   uint8_t address)
-{
+{ 
+  // std::cout << "TMC429 - Reading Addr: " << std::bitset<8>(address) << std::endl;
   MosiDatagram mosi_datagram;
   mosi_datagram.rrs = RRS_REGISTER;
   mosi_datagram.address = address;
   mosi_datagram.smda = smda;
   mosi_datagram.rw = RW_READ;
   mosi_datagram.data = 0;
+  // std::cout << "TMC429 - Sending  Datagram: " << std::bitset<32>(mosi_datagram.bytes) << std::endl;
   MisoDatagram miso_datagram = writeRead(mosi_datagram);
+  // std::cout << "TMC429 - Received Datagram: " << std::bitset<32>(miso_datagram.bytes) << std::endl << std::endl;
+  
   return miso_datagram.data;
 }
 
@@ -672,6 +701,7 @@ void TMC429::writeRegister(uint8_t smda,
   mosi_datagram.smda = smda;
   mosi_datagram.rw = RW_WRITE;
   mosi_datagram.data = data;
+  // std::cout << "TMC429 - Sending  Datagram: " << std::bitset<32>(mosi_datagram.bytes) << std::endl << std::endl;
   writeRead(mosi_datagram);
 }
 
@@ -679,17 +709,22 @@ TMC429::MisoDatagram TMC429::writeRead(MosiDatagram mosi_datagram)
 {
   MisoDatagram miso_datagram;
   miso_datagram.bytes = 0x0;
-  beginTransaction();
+  // beginTransaction();
+  gpioWrite(chip_select_pin_, PI_LOW);
+  // usleep(1);
   for (int i=(DATAGRAM_SIZE - 1); i>=0; --i)
   {
-    uint8_t byte_write = (mosi_datagram.bytes >> (8*i)) & 0xff;
-    uint8_t byte_read = spiTransfer(byte_write);
-    miso_datagram.bytes |= ((uint32_t)byte_read) << (8*i);
+    char byte_write[1];
+    char byte_read[1];
+    byte_write[0] = (mosi_datagram.bytes >> (8*i)) & 0xff;
+    uint8_t spi_status = spiXfer(spi_handle, byte_write, byte_read, 1);
+
+    miso_datagram.bytes |= ((uint32_t)byte_read[0]) << (8*i);
   }
-  endTransaction();
-  noInterrupts();
+  // endTransaction();
+  // usleep(1);
+  gpioWrite(chip_select_pin_, PI_HIGH);
   status_ = miso_datagram.status;
-  interrupts();
   return miso_datagram;
 }
 
@@ -1129,44 +1164,25 @@ void TMC429::setOptimalPropFactor(size_t motor,
 
 void TMC429::enableChipSelect()
 {
-  digitalWrite(chip_select_pin_, LOW);
+  gpioWrite(chip_select_pin_, PI_LOW);
 }
 
 void TMC429::disableChipSelect()
 {
-  digitalWrite(chip_select_pin_, HIGH);
+  gpioWrite(chip_select_pin_, PI_HIGH);
 }
 
 void TMC429::beginTransaction()
 {
+  // std::cout << "TMC429 SPI Handle: " << std::hex << spi_handle << std::endl;
   enableChipSelect();
-  delayMicroseconds(1);
-  spiBeginTransaction(SPISettings(SPI_CLOCK, SPI_BIT_ORDER, SPI_MODE));
+  usleep(1);
 }
 
 void TMC429::endTransaction()
 {
-  spiEndTransaction();
-  delayMicroseconds(1);
+  //spiClose(spi_handle);
+  
   disableChipSelect();
-}
-
-void TMC429::spiBegin()
-{
-  SPI.begin();
-}
-
-uint8_t TMC429::spiTransfer(uint8_t byte)
-{
-  return SPI.transfer(byte);
-}
-
-void TMC429::spiBeginTransaction(SPISettings settings)
-{
-  SPI.beginTransaction(settings);
-}
-
-void TMC429::spiEndTransaction()
-{
-  SPI.endTransaction();
+  // usleep(10);
 }

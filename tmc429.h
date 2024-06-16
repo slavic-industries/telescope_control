@@ -3,17 +3,22 @@
 //
 // Authors:
 // Peter Polidoro peter@polidoro.io
+//
+// Modified to work with pigpio library
 // ----------------------------------------------------------------------------
 #ifndef TMC429_H
 #define TMC429_H
-#include <Arduino.h>
-#include <SPI.h>
+#include <pigpio.h>
+#include <iostream>
+#include <unistd.h>
+#include <cmath>
 
 class TMC429
 {
 public:
-  void setup(size_t chip_select_pin,
-    uint8_t clock_frequency_mhz);
+  TMC429();
+  ~TMC429();
+  uint8_t setup(size_t chip_select_pin, uint8_t spi_device);
 
   bool communicating();
   uint32_t getVersion();
@@ -122,6 +127,9 @@ public:
     uint8_t address,
     uint32_t data);
 private:
+
+  bool initialized = false;
+
   enum Mode
   {
     RAMP_MODE=0b00,
@@ -172,13 +180,9 @@ private:
   };
 
   // SPISettings
-  const static uint32_t SPI_CLOCK = 100000;
-#if defined(ARDUINO_ARCH_SAMD) || defined(ARDUINO_ARCH_RP2040) || defined(ARDUINO_ARCH_RENESAS)
-  const static BitOrder SPI_BIT_ORDER = MSBFIRST;
-#else
-  const static uint8_t SPI_BIT_ORDER = MSBFIRST;
-#endif
-  const static uint8_t SPI_MODE = SPI_MODE3;
+  const static uint32_t SPI_CLOCK = 1000000;
+  uint8_t spi_channel;
+  int spi_handle;
 
   const static uint8_t MOTOR_COUNT = 3;
 
@@ -441,10 +445,10 @@ private:
   void endTransaction();
 
 protected:
-  virtual void spiBegin();
-  virtual void spiBeginTransaction(SPISettings);
-  virtual void spiEndTransaction();
-  virtual uint8_t spiTransfer(uint8_t);
+  // virtual void spiBegin();
+//   virtual void spiBeginTransaction(SPISettings);
+  // virtual void spiEndTransaction();
+  // virtual uint8_t spiTransfer(uint8_t);
 };
 
 #endif
