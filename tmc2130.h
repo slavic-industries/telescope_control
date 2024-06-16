@@ -16,6 +16,7 @@
 class TMC2130
 {
 public:
+  ~TMC2130();
   uint8_t setup(size_t chip_select_pin, uint8_t spi_device);
   uint8_t setup(size_t chip_select_pin,
     size_t enable_pin, uint8_t spi_device);
@@ -94,10 +95,12 @@ public:
   Settings getSettings();
 
 private:
+
+  bool initialized = false;
   // SPISettings
   const static uint32_t SPI_CLOCK = 1000000;
   uint8_t spi_channel;
-  uint8_t spi_handle;
+  int spi_handle;
 //   const static uint8_t SPI_BIT_ORDER = MSBFIRST;
 //   const static uint8_t SPI_MODE = SPI_MODE3;
 

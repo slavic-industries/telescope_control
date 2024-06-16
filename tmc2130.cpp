@@ -9,6 +9,15 @@
 #include "tmc2130.h"
 #include <bitset>
 
+TMC2130::~TMC2130()
+{
+  if(initialized)
+  {
+    spiClose(spi_handle);
+    initialized = false;
+  }
+  std::cout << "TMC2130 Object destroyed." <<std::endl;
+}
 uint8_t TMC2130::setup(size_t chip_select_pin, uint8_t spi_device)
 {
   chip_select_pin_ = chip_select_pin;
@@ -22,6 +31,9 @@ uint8_t TMC2130::setup(size_t chip_select_pin, uint8_t spi_device)
 
   gpioSetMode(chip_select_pin_,PI_OUTPUT);
   gpioWrite(chip_select_pin_,PI_HIGH);
+
+  spi_handle = spiOpen(spi_channel, SPI_CLOCK, 0);
+  std::cout << "TMC2130 SPI Handle (setup): " << std::hex << spi_handle << std::endl;
 
 
   global_config_.uint32 = 0;
@@ -41,6 +53,8 @@ uint8_t TMC2130::setup(size_t chip_select_pin, uint8_t spi_device)
   pwm_config_.fields.pwm_grad = PWM_GRAD_DEFAULT;
   pwm_config_.fields.pwm_freq = PWM_FREQ_DEFAULT;
   pwm_config_.fields.pwm_autoscale = PWM_AUTOSCALE_DEFAULT;
+
+  initialized = true;
   return 0;
 }
 
@@ -69,8 +83,8 @@ uint8_t TMC2130::getVersion()
 
 void TMC2130::initialize()
 {
-  setMicrostepsPerStep(256);
-  enableStealthChop();
+  // setMicrostepsPerStep(256);
+  // enableStealthChop();
   setPwmThreshold(TPWMTHRS_DEFAULT);
   setPwmConfig();
 }
@@ -336,12 +350,12 @@ uint32_t TMC2130::sendReceivePrevious(TMC2130::MosiDatagram & mosi_datagram)
 
     uint8_t spi_status_ = spiXfer(spi_handle, byte_write, byte_read, 1);
 
-    std::cout << "Byte received: " << std::bitset<8>(byte_read[0]) << std::endl;
+    // std::cout << "Byte received: " << std::bitset<8>(byte_read[0]) << std::endl;
 
     miso_datagram.uint64 |= byte_read[0] << (8*i);
   }
 
-  std::cout << std::endl;
+  // std::cout << std::endl;
   spiEndTransaction();
 
   spi_status_ = miso_datagram.fields.spi_status;
@@ -460,14 +474,13 @@ void TMC2130::disableClockSelect()
 }
 void TMC2130::spiBeginTransaction()
 {
-  spi_handle = spiOpen(spi_channel, SPI_CLOCK, 0);
+  // std::cout << "TMC2130 SPI Handle: " << std::hex << spi_handle << std::endl;
   enableClockSelect();
 }
 
 void TMC2130::spiEndTransaction()
 {
   disableClockSelect();
-  spiClose(spi_handle);
 }
 
 template <typename T>
