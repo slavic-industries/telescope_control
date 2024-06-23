@@ -20,27 +20,30 @@
 #define TMC429_CS_PIN 5
 
 const int RUN_CURRENT_PERCENT = 60;
-const int MICROSTEPS_PER_STEP = 256;
+const int MICROSTEPS_PER_STEP = 16;
 
 // Stepper controller settings
 const int CHIP_SELECT_PIN = 10;
 const int CLOCK_FREQUENCY_MHZ = 32;
 const int MOTOR_INDEX = 0;
 const int STEPS_PER_REV = 200;
-const int REVS_PER_SEC_MAX = 20;
+const int REVS_PER_SEC_MAX = 2;
 const int MICROSTEPS_PER_REV = STEPS_PER_REV*MICROSTEPS_PER_STEP;
-const int ACCELERATION_MAX = MICROSTEPS_PER_REV / 1;
-const long VELOCITY_MAX = REVS_PER_SEC_MAX * MICROSTEPS_PER_REV;
-const long VELOCITY_MIN = 10;
-const long VELOCITY_INC = 1000;
+const int ACCELERATION_MAX = 10; // MICROSTEPS_PER_REV / 1;
+const long VELOCITY_MAX = 0; //REVS_PER_SEC_MAX * MICROSTEPS_PER_REV;
+const long VELOCITY_MIN = 0;
+const long VELOCITY_INC = 5000;
 long target_velocity, actual_velocity, delta_velocity;
 bool at_target_velocity;
+
+const int SETUP_DELAY = 4000;
+const int LOOP_DELAY = 500;
 
 
 void print_driver_settings(TMC2130::Settings settings)
 {
-  std::cout << "stealth_chop_enabled: " << std::bitset<8>(settings.stealth_chop_enabled) << std::endl;
-  std::cout << "automatic_current_scaling_enabled: " << std::bitset<8>(settings.automatic_current_scaling_enabled) << std::endl;
+  std::cout << "stealth_chop_enabled: " << std::bitset<1>(settings.stealth_chop_enabled) << std::endl;
+  std::cout << "automatic_current_scaling_enabled: " << std::bitset<1>(settings.automatic_current_scaling_enabled) << std::endl;
   std::cout << "zero_hold_current_mode: " << std::bitset<8>(settings.zero_hold_current_mode) << std::endl;
   std::cout << "pwm_offset: " << std::bitset<8>(settings.pwm_offset) << std::endl;
   std::cout << "pwm_gradient: " << std::bitset<8>(settings.pwm_gradient) << std::endl;
@@ -50,17 +53,18 @@ void print_driver_settings(TMC2130::Settings settings)
 
 }
 
+
+
  
 
 
 int main() {
 
-  target_velocity = 2000;
 
   SI5351 clock_generator = SI5351(HOST_I2C_DEVICE, SI5351_ADDR);
 
-  TMC2130 stepper_driver;
-  TMC429 stepper_controller;
+  TMC2130 tmc2130;
+  TMC429 tmc429;
 
   if (clock_generator.begin())
   {
@@ -77,70 +81,101 @@ int main() {
   
 
   std::cout << "TMC429 Setup " << std::endl;
-  if(stepper_controller.setup(TMC429_CS_PIN, SPI_CHANNEL))
+  if(tmc429.setup(TMC429_CS_PIN, SPI_CHANNEL) != 0)
   {
     std::cerr << "Stepper driver initialization failed." << std::endl;
     return -1;
   }
-  if(stepper_controller.communicating()) std::cout << "TMC429 setup and configuration complete!" << std::endl;
+  if(tmc429.communicating()) std::cout << "TMC429 setup and configuration complete!" << std::endl;
 
 
+// return 0;
 
-  stepper_controller.disableLeftSwitchStop(MOTOR_INDEX);
-  stepper_controller.disableRightSwitches();
-  // stepper_controller.setVelocityMode(MOTOR_INDEX);
-  stepper_controller.setLimitsInHz(MOTOR_INDEX, VELOCITY_MIN, VELOCITY_MAX, ACCELERATION_MAX);
-  stepper_controller.stopAll();
-  usleep(2000000);
+
+  // stepper_controller.setup(CHIP_SELECT_PIN, CLOCK_FREQUENCY_MHZ);
+  
+  // tmc429.disableRightSwitches();
+  // tmc429.setVelocityMode(MOTOR_INDEX);
+  // tmc429.setLimitsInHz(MOTOR_INDEX, VELOCITY_MIN, VELOCITY_MAX, ACCELERATION_MAX);
+
+  // target_velocity = 0;
+  // delta_velocity = VELOCITY_INC;
+  // tmc429.setTargetVelocityInHz(MOTOR_INDEX, target_velocity);
+
+  tmc429.setPDiv(MOTOR_INDEX, 4);
+  tmc429.setPMul(MOTOR_INDEX, 128);
+  tmc429.setPulseDiv(MOTOR_INDEX, 7);
+  tmc429.setRampDiv(MOTOR_INDEX, 13);
+
+  tmc429.setStepDiv(15);
+  tmc429.setStepDirOutput();
+
+  tmc429.setVelocityMode(MOTOR_INDEX);
+  tmc429.disableLeftSwitchStop(MOTOR_INDEX);
+  tmc429.disableRightSwitchStop(MOTOR_INDEX);
+  tmc429.disableInverseStepPolarity();
+  tmc429.disableInverseDirPolarity();
+
+  tmc429.setVelocityMin(MOTOR_INDEX, 0);
+  tmc429.setVelocityMax(MOTOR_INDEX, 2047);
+  tmc429.setAccelerationMaxInStepPerSS(MOTOR_INDEX, 2000);
+  // usleep(100000);  
+  tmc429.setTargetVelocity(MOTOR_INDEX, 0);
+
+  std::cout << "***********"<< std::endl;
+  std::cout << "***********"<< std::endl;
+  std::cout << "***********"<< std::endl;
+  std::cout << "Motor Setup"<< std::endl;
+  std::cout << "***********"<< std::endl;
+  std::cout << "***********"<< std::endl;
+  std::cout << "***********"<< std::endl;
+  tmc429.printSettingsMotor0();
+  // return 0;
 
 
   std::cout << "TMC2130 Setup " << std::endl;
-  if(stepper_driver.setup(TMC2130_CS_PIN, SPI_CHANNEL))
+  if(tmc2130.setup(TMC2130_CS_PIN, SPI_CHANNEL))
   {
     std::cerr << "Stepper driver initialization failed." << std::endl;
     return -1;
   }
-  if(stepper_driver.communicating()) std::cout << "TMC2130 setup and configuration complete!" << std::endl;
+  if(tmc2130.communicating()) std::cout << "TMC2130 setup and configuration complete!" << std::endl;
 
-  stepper_driver.setMicrostepsPerStep(MICROSTEPS_PER_STEP);
-  stepper_driver.enableStealthChop();
-  // stepper_driver.setAllCurrentValues(100, 0, 0);
-  stepper_driver.initialize();
+  tmc2130.setHoldCurrent(50);
+  tmc2130.setRunCurrent(30);
 
-  TMC2130::Settings driver_settings = stepper_driver.getSettings();
-
-  print_driver_settings(driver_settings);
-
-  stepper_controller.setTargetVelocity(MOTOR_INDEX, 0);
-  stepper_controller.setVelocityMode(MOTOR_INDEX);
-  stepper_controller.setTargetVelocity(MOTOR_INDEX, 5000);
-  std::cout << "Motor target: " << std::bitset<32>(stepper_controller.getTargetVelocity(MOTOR_INDEX)) << std::endl;
-
-
-  bool at_target = false;
-  while(!at_target)
-  { //
-    std::cout << "Motor at: " << std::bitset<32>(stepper_controller.getActualVelocity(MOTOR_INDEX)) << std::endl;
-    at_target = stepper_controller.atTargetVelocity(MOTOR_INDEX);
-    usleep(100);
-  }
-  std::cout << "Motor at target." << std::endl;
-
-  usleep(10000000);
-  stepper_controller.setTargetVelocity(MOTOR_INDEX, 0);
-  while(!stepper_controller.atTargetVelocity(MOTOR_INDEX));
-  std::cout << "Motor stopped." << std::endl;
-
-  return 0;
   
-  delta_velocity = VELOCITY_INC;
-  stepper_controller.setTargetVelocityInHz(MOTOR_INDEX, 0);
-  usleep(500000);
-  stepper_controller.setTargetVelocityInHz(MOTOR_INDEX, target_velocity);
 
-  stepper_driver.enable();
+  
 
-  std::cout << "Setup Complete!" <<  std::endl;
+
+
+
+
+  // bool at_target = false;
+  // while(!at_target)
+  // { //;
+  //   std::cout << "Motor at: " << std::bitset<32>(stepper_controller.getActualVelocity(MOTOR_INDEX)) << std::endl;
+  //   at_target = stepper_controller.atTargetVelocity(MOTOR_INDEX);
+  //   usleep(100);
+  // }
+  // std::cout << "Motor at target." << std::endl;
+
+  // usleep(10000000);
+  // stepper_controller.setTargetVelocity(MOTOR_INDEX, 0);
+  // while(!stepper_controller.atTargetVelocity(MOTOR_INDEX));
+  // std::cout << "Motor stopped." << std::endl;
+
+  // return 0;
+  
+  // delta_velocity = VELOCITY_INC;
+  // stepper_controller.setTargetVelocityInHz(MOTOR_INDEX, 0);
+  // usleep(500000);
+  // stepper_controller.setTargetVelocityInHz(MOTOR_INDEX, target_velocity);
+
+  // stepper_driver.enable();
+
+  // std::cout << "Setup Complete!" <<  std::endl;
 
   // int pwm_pin = 6;
   // int frequency = 1000; //Hz
@@ -154,10 +189,58 @@ int main() {
 
   // gpioSetPWMfrequency(pwm_pin, frequency);
   // gpioPWM(pwm_pin, dutyCycle);
-
-
+  // time_t t_start = time(0);
+  // long dt = 6;
+  // dt = 1000000;
+  // gpioSetMode(13, PI_OUTPUT);
+  // gpioPWM(13, 50);
+  // gpioSetPWMfrequency(13, 100);
+  // usleep(dt);
+  // gpioSetPWMfrequency(13, 200);
+  // usleep(dt);
+  // gpioSetPWMfrequency(13, 300);
+  // usleep(dt);
+  // gpioSetPWMfrequency(13, 400);
+  // usleep(dt);
+  // gpioSetPWMfrequency(13, 500);
+  // usleep(dt);
+  // gpioSetPWMfrequency(13, 600);
+  // usleep(dt);
+  // gpioSetPWMfrequency(13, 700);
+  // usleep(dt);
+  // gpioSetPWMfrequency(13, 800);
+  // usleep(dt);
+  // target_velocity = 10000;
+  // tmc429.setTargetVelocityInHz(MOTOR_INDEX, target_velocity);
   while(1)
   {
+    // tmc429.setTargetVelocityInHz(MOTOR_INDEX, target_velocity);
+    // at_target_velocity = tmc429.atTargetVelocity(MOTOR_INDEX);
+    // std::cout << "at target velocity: ";
+    // std::cout << at_target_velocity;
+
+    // std::cout << "\ttarget velocity (Hz): ";
+    // std::cout << target_velocity;
+
+    // actual_velocity = tmc429.getActualVelocityInHz(MOTOR_INDEX);
+    // std::cout << "\tactual velocity (Hz): ";
+    // std::cout << std::dec << actual_velocity << std::endl;
+
+    // // if ((time(0) - t_start) > dt)
+    // // {
+    // //   t_start = time(0);
+    // //   target_velocity = target_velocity == 0 ? 100 : 0;
+    // //   std::cout << "Target velocity set: " << target_velocity << std::endl;
+    // //   tmc429.setTargetVelocityInHz(MOTOR_INDEX, target_velocity);
+    // // }
+
+    usleep(100000);
+    // tmc429.printSettingsMotor0();
+    usleep(100000);
+    tmc2130.printSettings();
+
+
+
 
   }
 

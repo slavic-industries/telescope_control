@@ -24,6 +24,8 @@ public:
   bool communicating();
   uint8_t getVersion();
 
+  void reset_driver();
+
   void initialize();
 
   void enable();
@@ -93,6 +95,7 @@ public:
     uint8_t iholddelay;
   };
   Settings getSettings();
+  void printSettings();
 
 private:
 

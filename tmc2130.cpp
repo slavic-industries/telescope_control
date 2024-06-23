@@ -54,8 +54,158 @@ uint8_t TMC2130::setup(size_t chip_select_pin, uint8_t spi_device)
   pwm_config_.fields.pwm_freq = PWM_FREQ_DEFAULT;
   pwm_config_.fields.pwm_autoscale = PWM_AUTOSCALE_DEFAULT;
 
+  reset_driver();
+
+  // ChopperConfig chopper_config;
+  // uint32_t rd = read(ADDRESS_CHOPCONF);
+  // std::cout << "Chopper confg read: " << std::bitset<32>(rd) << std::endl;
+  // chopper_config.uint32 = rd;
+  // std::cout << "Chopper confg: " << std::bitset<32>(chopper_config.uint32) << std::endl;
+  // std::cout << "Chopper toff: " << std::bitset<4>(chopper_config.fields.toff) << std::endl;
+  // chopper_config.fields.toff = 8;
+  // chopper_config.fields.tbl = 1;
+  // std::cout << "Chopper confg: " << std::bitset<32>(chopper_config.uint32) << std::endl;
+  // write(ADDRESS_CHOPCONF, chopper_config.uint32);
+  // rd = read(ADDRESS_CHOPCONF);
+  // std::cout << "Chopper confg read: " << std::bitset<32>(rd) << std::endl;
+
+  // GlobalConfig gc;
+  // rd = read(ADDRESS_GCONF);
+  // gc.uint32 = rd;
+  // std::cout << "General confg read: " << std::bitset<32>(rd) << std::endl;
+  // gc.fields.enc_commutation = 0;
+  // gc.fields.shaft = 0;
+  // gc.fields.diag0_error = 0;
+  // gc.fields.diag0_otpw = 0;
+  // write(ADDRESS_GCONF, gc.uint32);
+  // rd = read(ADDRESS_GCONF);
+  // std::cout << "General con mo read: " << std::bitset<32>(rd) << std::endl;
+
+  write(ADDRESS_GCONF, global_config_.uint32);
+  write(ADDRESS_IHOLD_IRUN, driver_current_.uint32);
+  write(ADDRESS_CHOPCONF, chopper_config_.uint32);
+  write(ADDRESS_PWMCONF, pwm_config_.uint32);
+
+
+
   initialized = true;
   return 0;
+}
+
+void TMC2130::printSettings()
+{
+  GlobalConfig global_config_;
+  GlobalStatus global_status_;
+  InputPinStatus input_pin_status_;
+  DriverCurrent driver_current_;
+  PowerDownDelay power_down_;
+  ChopperConfig chopper_config_;
+  CoolConfig cool_config_;
+  DriveStatus drive_status_;
+  PwmConfig pwm_cingfig_;
+
+
+  global_config_.uint32 = read(ADDRESS_GCONF);
+  global_status_.uint32 = read(ADDRESS_GSTAT);
+  input_pin_status_.uint32 = read(ADDRESS_IOIN);
+  driver_current_.uint32 = read(ADDRESS_IHOLD_IRUN);
+  power_down_.uint32 = read(ADDRESS_TPOWERDOWN);
+  chopper_config_.uint32 = read(ADDRESS_CHOPCONF);
+  cool_config_.uint32 = read(ADDRESS_COOLCONF);
+  drive_status_.uint32 = read(ADDRESS_DRV_STATUS);
+  pwm_config_.uint32 = read(ADDRESS_PWMCONF);
+  
+  std::cout << "Driver Settings" << std::endl;
+  std::cout << "Global Config:   \t" << std::bitset<32>(global_config_.uint32) << std::endl;
+  std::cout << "\ti_scale_analog:" << std::bitset<1>(global_config_.fields.i_scale_analog) << std::endl;
+  std::cout << "\tinternal_rsense:" << std::bitset<1>(global_config_.fields.internal_rsense) << std::endl;
+  std::cout << "\ten_pwm_mode:" << std::bitset<1>(global_config_.fields.en_pwm_mode) << std::endl;
+  std::cout << "\tenc_communication:" << std::bitset<1>(global_config_.fields.enc_commutation) << std::endl;
+  std::cout << "\tshaft:" << std::bitset<1>(global_config_.fields.shaft) << std::endl;
+  std::cout << "\tdiag0_error:" << std::bitset<1>(global_config_.fields.diag0_error) << std::endl;
+  // std::cout << "\tdiag0_otpw:" << std::bitset<1>(global_config_.fields.diag0_otpw) << std::endl;
+  // std::cout << "\tdiag0_stall:" << std::bitset<1>(global_config_.fields.diag0_stall) << std::endl;
+  // std::cout << "\tdiag1_index:" << std::bitset<1>(global_config_.fields.diag1_index) << std::endl;
+  // std::cout << "\tdiag1_onstate:" << std::bitset<1>(global_config_.fields.diag1_onstate) << std::endl;
+  // std::cout << "\tdiag1_steps_skipped:" << std::bitset<1>(global_config_.fields.diag1_steps_skipped) << std::endl;
+  // std::cout << "\tdiag1_int_pushpull:" << std::bitset<1>(global_config_.fields.diag1_int_pushpull) << std::endl;
+  // std::cout << "\tdiag1_pushpull:" << std::bitset<1>(global_config_.fields.diag1_pushpull) << std::endl;
+  std::cout << "\tsmall_hysteresis:" << std::bitset<1>(global_config_.fields.small_hysteresis) << std::endl;
+  std::cout << "\tstop_enable:" << std::bitset<1>(global_config_.fields.stop_enable) << std::endl;
+  std::cout << "\tdirect_mode:" << std::bitset<1>(global_config_.fields.direct_mode) << std::endl;
+  std::cout << "\ttest_mode:" << std::bitset<1>(global_config_.fields.test_mode) << std::endl;
+  
+  // std::cout << "Global Status:   \t" << std::bitset<32>(global_status_.uint32) << std::endl;
+  // std::cout << "\treset:" << std::bitset<1>(global_status_.fields.reset) << std::endl;
+  // std::cout << "\tdrv_err:" << std::bitset<1>(global_status_.fields.drv_err) << std::endl;
+  // std::cout << "\tuv_cp:" << std::bitset<1>(global_status_.fields.uv_cp) << std::endl;
+  
+  // std::cout << "Input Pin Status:\t" << std::bitset<32>(input_pin_status_.uint32) << std::endl;
+  // std::cout << "\tstep:" << std::bitset<1>(input_pin_status_.fields.step) << std::endl;
+  // std::cout << "\tdir:" << std::bitset<1>(input_pin_status_.fields.dir) << std::endl;
+  // std::cout << "\tdcen_cfg4:" << std::bitset<1>(input_pin_status_.fields.dcen_cfg4) << std::endl;
+  // std::cout << "\tdcin_cfg5:" << std::bitset<1>(input_pin_status_.fields.dcin_cfg5) << std::endl;
+  // std::cout << "\tdrv_enn_cfg6:" << std::bitset<1>(input_pin_status_.fields.drv_enn_cfg6) << std::endl;
+  // std::cout << "\tdco:" << std::bitset<1>(input_pin_status_.fields.dco) << std::endl;
+  // std::cout << "\tone:" << std::bitset<1>(input_pin_status_.fields.one) << std::endl;
+  // std::cout << "\tversion:" << std::bitset<8>(input_pin_status_.fields.version) << std::endl;
+  
+  std::cout << "Driver Current:  \t" << std::bitset<32>(driver_current_.uint32) << std::endl;
+  std::cout << "\tihold:" << std::bitset<5>(driver_current_.fields.ihold) << std::endl;
+  std::cout << "\tirun:" << std::bitset<5>(driver_current_.fields.irun) << std::endl;
+  std::cout << "\tiholddelay:" << std::bitset<4>(driver_current_.fields.iholddelay) << std::endl;
+  
+  // std::cout << "Power Down:      \t" << std::bitset<32>(power_down_.uint32) << std::endl;
+  // std::cout << "\tvalue:" << std::bitset<8>(power_down_.fields.value) << std::endl;
+  
+  std::cout << "Chopper Config:  \t" << std::bitset<32>(chopper_config_.uint32) << std::endl;
+  std::cout << "\ttoff:" << std::bitset<4>(chopper_config_.fields.toff) << std::endl;
+  std::cout << "\thstrt:" << std::bitset<3>(chopper_config_.fields.hstrt) << std::endl;
+  std::cout << "\thend:" << std::bitset<4>(chopper_config_.fields.hend) << std::endl;
+  std::cout << "\tfd3:" << std::bitset<1>(chopper_config_.fields.fd3) << std::endl;
+  std::cout << "\tdisfdcc:" << std::bitset<1>(chopper_config_.fields.disfdcc) << std::endl;
+  std::cout << "\trndtf:" << std::bitset<1>(chopper_config_.fields.rndtf) << std::endl;
+  std::cout << "\tchm:" << std::bitset<1>(chopper_config_.fields.chm) << std::endl;
+  std::cout << "\ttbl:" << std::bitset<2>(chopper_config_.fields.tbl) << std::endl;
+  std::cout << "\tvsense:" << std::bitset<1>(chopper_config_.fields.vsense) << std::endl;
+  std::cout << "\tvhighfs:" << std::bitset<1>(chopper_config_.fields.vhighfs) << std::endl;
+  std::cout << "\tvhighchm:" << std::bitset<1>(chopper_config_.fields.vhighchm) << std::endl;
+  std::cout << "\tsync:" << std::bitset<4>(chopper_config_.fields.sync) << std::endl;
+  std::cout << "\tmres:" << std::bitset<4>(chopper_config_.fields.mres) << std::endl;
+  std::cout << "\tintpol:" << std::bitset<1>(chopper_config_.fields.intpol) << std::endl;
+  std::cout << "\tdedge:" << std::bitset<1>(chopper_config_.fields.dedge) << std::endl;
+  std::cout << "\tdiss2g:" << std::bitset<1>(chopper_config_.fields.diss2g) << std::endl;
+  
+  std::cout << "Cool Config:     \t" << std::bitset<32>(cool_config_.uint32) << std::endl;
+  std::cout << "\tsemin:" << std::bitset<4>(cool_config_.fields.semin) << std::endl;
+  std::cout << "\tseup:" << std::bitset<2>(cool_config_.fields.seup) << std::endl;
+  std::cout << "\tsemax:" << std::bitset<4>(cool_config_.fields.semax) << std::endl;
+  std::cout << "\tsedn:" << std::bitset<2>(cool_config_.fields.sedn) << std::endl;
+  std::cout << "\tseimin:" << std::bitset<1>(cool_config_.fields.seimin) << std::endl;
+  std::cout << "\tsgt:" << std::bitset<7>(cool_config_.fields.sgt) << std::endl;
+  std::cout << "\tsfilt:" << std::bitset<1>(cool_config_.fields.sfilt) << std::endl;
+  
+  std::cout << "Drive Status:    \t" << std::bitset<32>(drive_status_.uint32) << std::endl;
+  std::cout << "\tload:" << std::bitset<1>(drive_status_.fields.status.load) << std::endl;
+  std::cout << "\tfull_step_active:" << std::bitset<1>(drive_status_.fields.status.full_step_active) << std::endl;
+  std::cout << "\tcurrent_scaling:" << std::bitset<1>(drive_status_.fields.status.current_scaling) << std::endl;
+  std::cout << "\tstall:" << std::bitset<1>(drive_status_.fields.status.stall) << std::endl;
+  std::cout << "\tover_temperature_shutdown:" << std::bitset<1>(drive_status_.fields.status.over_temperature_shutdown) << std::endl;
+  std::cout << "\tover_temperature_warning:" << std::bitset<1>(drive_status_.fields.status.over_temperature_warning) << std::endl;
+  std::cout << "\tshort_to_ground_a:" << std::bitset<1>(drive_status_.fields.status.short_to_ground_a) << std::endl;
+  std::cout << "\tshort_to_ground_b:" << std::bitset<1>(drive_status_.fields.status.short_to_ground_b) << std::endl;
+  std::cout << "\topen_load_a:" << std::bitset<1>(drive_status_.fields.status.open_load_a) << std::endl;
+  std::cout << "\topen_load_b:" << std::bitset<1>(drive_status_.fields.status.open_load_b) << std::endl;
+  std::cout << "\tstandstill:" << std::bitset<1>(drive_status_.fields.status.standstill) << std::endl;
+  
+  // std::cout << "PWM Config:      \t" << std::bitset<32>(pwm_cingfig_.uint32) << std::endl;
+  // std::cout << "\tpwm_ampl:" << std::bitset<8>(pwm_cingfig_.fields.pwm_ampl) << std::endl;
+  // std::cout << "\tpwm_grad:" << std::bitset<8>(pwm_cingfig_.fields.pwm_grad) << std::endl;
+  // std::cout << "\t:pwm_freq" << std::bitset<2>(pwm_cingfig_.fields.pwm_freq) << std::endl;
+  // std::cout << "\tpwm_autoscale:" << std::bitset<1>(pwm_cingfig_.fields.pwm_autoscale) << std::endl;
+  // std::cout << "\tpwm_symmetric:" << std::bitset<1>(pwm_cingfig_.fields.pwm_symmetric) << std::endl;
+  // std::cout << "\tfreewheel:" << std::bitset<2>(pwm_cingfig_.fields.freewheel) << std::endl;
+  
 }
 
 uint8_t TMC2130::setup(size_t chip_select_pin,
@@ -80,6 +230,25 @@ uint8_t TMC2130::getVersion()
 
   return input_pin_status.fields.version;
 }
+
+
+void TMC2130::reset_driver()
+{
+  write(ADDRESS_GCONF, 0);
+  write(ADDRESS_IHOLD_IRUN, 0x00000000);
+  write(ADDRESS_TPOWERDOWN, 0x00000000);
+  write(ADDRESS_TPWMTHRS, 0x00000000);
+  write(ADDRESS_TCOOLTHRS, 0x00000000);
+  write(ADDRESS_THIGH, 0x00000000);
+  write(ADDRESS_XDIRECT, 0x00000000);
+  write(ADDRESS_VDCMIN, 0x00000000);
+  write(ADDRESS_CHOPCONF, 0x00000000);
+  write(ADDRESS_COOLCONF, 0x00000000);
+  write(ADDRESS_PWMCONF, 0x00000000);
+  write(ADDRESS_ENCM_CTRL, 0x00000000);
+}
+
+
 
 void TMC2130::initialize()
 {

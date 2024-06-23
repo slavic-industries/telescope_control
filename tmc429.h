@@ -22,6 +22,7 @@ public:
 
   bool communicating();
   uint32_t getVersion();
+  void printSettingsMotor0();
 
   void setRampMode(size_t motor);
   void setSoftMode(size_t motor);
@@ -126,6 +127,18 @@ public:
   void writeRegister(uint8_t smda,
     uint8_t address,
     uint32_t data);
+
+
+  void setVelocityMax(size_t motor, uint32_t velocity_max);
+  void setVelocityMin(size_t motor, uint32_t velocity_min);
+  void setAccelerationMaxInStepPerSS(size_t motor, uint32_t acceleration_max);
+  void setPMul(size_t motor, uint8_t pmul);
+  void setPDiv(size_t motor, uint8_t pdiv);
+  void setPulseDiv(size_t motor, uint8_t pulsediv);
+  void setRampDiv(size_t motor, uint8_t ramodiv);
+  void setStepDiv(uint8_t step_div);
+  void setStepDirOutput();
+  
 private:
 
   bool initialized = false;
@@ -357,7 +370,7 @@ private:
 
   void initialize();
 
-  void setStepDirOutput();
+  
   // void setSpiOutput();
 
   MisoDatagram writeRead(MosiDatagram mosi_datagram);
@@ -369,7 +382,7 @@ private:
 
   void setOptimalStepDivHz(uint32_t velocity_max_hz);
   uint8_t getStepDiv();
-  void setStepDiv(uint8_t step_div);
+  
   double stepDivToStepTime(uint8_t step_div);
 
   int32_t convertVelocityToHz(uint8_t pulse_div,
@@ -403,6 +416,7 @@ private:
   uint16_t getVelocityMax(size_t motor);
   void setVelocityMaxInHz(size_t motor,
     uint32_t velocity_max_hz);
+  
 
   uint32_t convertAccelerationToHzPerS(uint8_t pulse_div,
     uint8_t ramp_div,

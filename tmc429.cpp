@@ -16,12 +16,13 @@ TMC429::TMC429()
 
 TMC429::~TMC429()
 { 
-  // if(initialized)
-  // {
-  //   spiClose(spi_handle);
-  //   initialized = false;
-  // }
-  // std::cerr << "TMC429 object destroyed" << std::endl;
+  stopAll();
+  if(initialized)
+  {
+    spiClose(spi_handle);
+    initialized = false;
+  }
+  std::cerr << "TMC429 object destroyed" << std::endl;
 }
 
 uint8_t TMC429::setup(size_t chip_select_pin, uint8_t spi_device)
@@ -38,6 +39,10 @@ uint8_t TMC429::setup(size_t chip_select_pin, uint8_t spi_device)
   gpioWrite(chip_select_pin_,PI_HIGH);
 
   spi_handle = spiOpen(spi_channel, SPI_CLOCK, 0x03);
+  if (spi_handle < 0) {
+    std::cerr << "spiOpen failed." << std::endl;
+    return 1;
+  }
   std::cout << "TMC429 SPI Handle (setup): " << std::hex << spi_handle << std::endl;
 
   for (uint8_t motor=0; motor<MOTOR_COUNT; ++motor)
@@ -46,15 +51,186 @@ uint8_t TMC429::setup(size_t chip_select_pin, uint8_t spi_device)
     ramp_div_[motor] = 0;
   }
 
-  setStepDiv(STEP_DIV_MAX);
+  // setStepDiv(STEP_DIV_MAX);
+  // setStepDirOutput();
 
-  stopAll();
+  // stopAll();
 
-  initialize();
+
+  // initialize();
+
+  // printSettingsMotor0();
 
   initialized = true;
 
   return 0;
+}
+
+void TMC429::setPMul(size_t motor, uint8_t pmul)
+{
+  uint32_t rd = readRegister(motor, ADDRESS_PROP_FACTOR);
+  uint32_t mask = (pmul << 8);
+  // Clear pmul bits
+  rd &= 0xFFFF00FF;
+  // Add new pmul
+  rd |= mask;
+  writeRegister(motor, ADDRESS_PROP_FACTOR, rd);
+}
+void TMC429::setPDiv(size_t motor, uint8_t pdiv)
+{
+  uint32_t rd = readRegister(motor, ADDRESS_PROP_FACTOR);
+  uint32_t mask = pdiv;
+  // Clear pdiv bits
+  rd &= 0xFFFFFF00;
+  // Add new pmul
+  rd |= mask;
+  writeRegister(motor, ADDRESS_PROP_FACTOR, rd);
+}
+
+void TMC429::setPulseDiv(size_t motor, uint8_t pulsediv)
+{
+  uint32_t rd = readRegister(motor, ADDRESS_CLOCK_CONFIGURATION);
+  uint32_t mask = pulsediv << 12;
+  // Clear pdiv bits
+  rd &= 0xFFFF0FFF;
+  // Add new pmul
+  rd |= mask;
+  writeRegister(motor, ADDRESS_CLOCK_CONFIGURATION, rd);
+}
+
+void TMC429::setRampDiv(size_t motor, uint8_t rampdiv)
+{
+  uint32_t rd = readRegister(motor, ADDRESS_CLOCK_CONFIGURATION);
+  uint32_t mask = rampdiv << 8;
+  // Clear pdiv bits
+  rd &= 0xFFFFF0FF;
+  // Add new pmul
+  rd |= mask;
+  writeRegister(motor, ADDRESS_CLOCK_CONFIGURATION, rd);
+}
+
+void TMC429::printSettingsMotor0()
+{ 
+  uint32_t rd;
+  size_t motor = 0;
+  Status status_;
+  PropFactor propfactor_;
+  RefConfMode ref_conf_mode_;
+  IfConf if_conf_;
+  SwState sw_state_;
+  GlobalParameters global_parameters_;
+  ClkConfig clk_config_;
+
+  status_ = getStatus();
+  propfactor_.bytes = readRegister(motor, ADDRESS_PROP_FACTOR);
+  ref_conf_mode_.ref_conf = getReferenceConfiguration(motor);
+  if_conf_.if_conf = getInterfaceConfiguration();
+  sw_state_.switch_state = getSwitchState();
+  global_parameters_.bytes = readRegister(SMDA_COMMON, ADDRESS_GLOBAL_PARAMETERS);
+  clk_config_.clk_config = getClockConfiguration(motor);
+
+  uint32_t x_target = getTargetPosition(motor);
+  uint32_t x_actual = getActualPosition(motor);
+  uint16_t v_min = getVelocityMin(motor);
+  uint16_t v_max = getVelocityMax(motor);
+  uint16_t v_target = getTargetVelocity(motor);
+  uint16_t v_actual = getActualVelocity(motor);
+  uint16_t a_max = getAccelerationMax(motor);
+  uint16_t a_actual = getActualAcceleration(motor);
+  uint16_t a_threash;      // ADDRESS_A_THRESHOLD
+  rd = readRegister(motor, ADDRESS_A_THRESHOLD);
+  a_threash = rd & 0xFFF;
+  uint16_t dx_ref_tol;    // ADDRESS_DX_REF_TOLERANCE
+  rd = readRegister(motor, ADDRESS_DX_REF_TOLERANCE);
+  dx_ref_tol = rd & 0xFFF;
+  uint32_t x_latched = getLatchPosition(motor);
+  uint8_t ustep_count_429;   // ADDRESS_USTEP_COUNT_429
+  rd = readRegister(motor, ADDRESS_USTEP_COUNT_429);
+  ustep_count_429 = rd & 0xFF;
+
+  std::cout << "Motor index:\t" << std::dec << motor << std::endl;
+  std::cout << "\tX_TARGET:\t" << std::dec << x_target << std::endl;
+  std::cout << "\tX_TARGET:\t" << std::bitset<32>(x_target) << std::endl;
+  std::cout << "\tX_ACTUAL:\t" << std::dec << x_actual << std::endl;
+  std::cout << "\tX_ACTUAL:\t" << std::bitset<32>(x_actual) << std::endl;
+  std::cout << "\tV_MIN:\t\t" << std::dec << v_min << std::endl;
+  std::cout << "\tV_MIN:\t\t" << std::bitset<16>(v_min) << std::endl;
+  std::cout << "\tV_MAX:\t\t" << std::dec << v_max << std::endl;
+  std::cout << "\tV_MAX:\t\t" << std::bitset<16>(v_max) << std::endl;
+  std::cout << "\tV_TARGET:\t" << std::dec << v_target << std::endl;
+  std::cout << "\tV_TARGET:\t" << std::bitset<16>(v_target) << std::endl;
+  std::cout << "\tV_ACTUAL:\t" << std::dec << v_actual << std::endl;
+  std::cout << "\tA_MAX:\t\t" << std::dec << a_max << std::endl;
+  std::cout << "\tA_MAX:\t\t" << std::bitset<16>(a_max) << std::endl;
+  std::cout << "\tA_ACTUAL:\t" << std::dec << a_actual << std::endl;
+  std::cout << "\tA_THREASH:\t" << std::dec << a_threash << std::endl;
+  std::cout << "\tDX Ref Tol:\t" << std::dec << dx_ref_tol << std::endl;
+  std::cout << "\tX_Latch:\t" << std::dec << x_latched << std::endl;
+  std::cout << "\tuStep Count:\t" << std::bitset<8>(ustep_count_429) << std::endl;
+  
+  std::cout << "Datagrams:"<< std::endl;
+  // std::cout << "\tStatus:\t" << std::endl;
+  // std::cout << "\t  at_target_0\t\t" << std::bitset<1>(status_.at_target_position_0) << std::endl;
+  // std::cout << "\t  switch_l_0\t\t" << std::bitset<1>(status_.switch_left_0) << std::endl;
+  // std::cout << "\t  at_target_1\t\t" << std::bitset<1>(status_.at_target_position_1) << std::endl;
+  // std::cout << "\t  switch_l_1\t\t" << std::bitset<1>(status_.switch_left_1) << std::endl;
+  // std::cout << "\t  at_target_2\t\t" << std::bitset<1>(status_.at_target_position_2) << std::endl;
+  // std::cout << "\t  switch_l_2\t\t" << std::bitset<1>(status_.switch_left_2) << std::endl;
+  // std::cout << "\t  datagram_wait\t\t" << std::bitset<1>(status_.cover_datagram_waiting) << std::endl;
+  // std::cout << "\t  interrupt\t\t" << std::bitset<1>(status_.interrupt) << std::endl;
+
+  std::cout << "\tProp Factor:\t" << std::endl; // std::bitset<32>(propfactor_.bytes) << std::endl;
+  std::cout << "\t  pdiv\t\t" << std::bitset<4>(propfactor_.pdiv) << std::endl;
+  std::cout << "\t  pdiv\t\t" << std::dec << propfactor_.pdiv << std::endl;
+  std::cout << "\t  pmul\t\t" << std::bitset<8>(propfactor_.pmul) << std::endl;
+  std::cout << "\t  pmul\t\t" << std::dec << propfactor_.pmul << std::endl;
+
+  // std::cout << "\tRef Conf:\t" << std::endl; // std::bitset<32>(ref_conf_mode_.bytes) << std::endl;
+  // std::cout << "\t  mode\t\t" << std::bitset<2>(ref_conf_mode_.mode) << std::endl;
+  // std::cout << "\t  dis_stop_l\t" << std::bitset<1>(ref_conf_mode_.ref_conf.disable_stop_l) << std::endl;
+  // std::cout << "\t  dis_stop_r\t" << std::bitset<1>(ref_conf_mode_.ref_conf.disable_stop_r) << std::endl;
+  // std::cout << "\t  soft stop\t" << std::bitset<1>(ref_conf_mode_.ref_conf.soft_stop) << std::endl;
+  // std::cout << "\t  ref_RnL\t" << std::bitset<1>( ref_conf_mode_.ref_conf.ref_rnl) << std::endl;
+  // std::cout << "\t  lp\t\t" << std::bitset<1>(ref_conf_mode_.lp) << std::endl;
+  
+  std::cout << "\tIf Conf:\t" << std::endl; // std::bitset<32>(if_conf_.bytes) << std::endl;
+  // std::cout << "\t  inv_ref\t" << std::bitset<1>(if_conf_.if_conf.inv_ref) << std::endl;
+  // std::cout << "\t  sdo_int\t" << std::bitset<1>(if_conf_.if_conf.sdo_int) << std::endl;
+  // std::cout << "\t  step_half\t" << std::bitset<1>(if_conf_.if_conf.step_half) << std::endl;
+  // std::cout << "\t  inv_step\t" << std::bitset<1>(if_conf_.if_conf.inv_stp) << std::endl;
+  // std::cout << "\t  inv_dir\t" << std::bitset<1>(if_conf_.if_conf.inv_dir) << std::endl;
+  std::cout << "\t  en_sd\t\t" << std::bitset<1>(if_conf_.if_conf.en_sd) << std::endl;
+  // std::cout << "\t  pos_comp_sel\t" << std::bitset<1>(if_conf_.if_conf.pos_comp_sel) << std::endl;
+  // std::cout << "\t  en_refr\t" << std::bitset<1>(if_conf_.if_conf.en_refr) << std::endl;
+  
+  // std::cout << "\tSW State:\t" << std::endl; // std::bitset<32>(sw_state_.bytes) << std::endl;
+  // std::cout << "\t  r0\t\t" << std::bitset<1>(sw_state_.switch_state.r0) << std::endl;
+  // std::cout << "\t  l0\t\t" << std::bitset<1>(sw_state_.switch_state.l0) << std::endl;
+  // std::cout << "\t  r1\t\t" << std::bitset<1>(sw_state_.switch_state.r1) << std::endl;
+  // std::cout << "\t  l1\t\t" << std::bitset<1>(sw_state_.switch_state.l1) << std::endl;
+  // std::cout << "\t  r2\t\t" << std::bitset<1>(sw_state_.switch_state.r2) << std::endl;
+  // std::cout << "\t  l2\t\t" << std::bitset<1>(sw_state_.switch_state.l2) << std::endl;
+  
+  // std::cout << "\tGlobal Param:\t" << std::endl; // std::bitset<32>(global_parameters_.bytes) << std::endl;
+  // std::cout << "\t  lsmod\t\t" << std::bitset<2>(global_parameters_.lsmd) << std::endl;
+  // std::cout << "\t  nscs_s\t" << std::bitset<1>(global_parameters_.nscs_s) << std::endl;
+  // std::cout << "\t  sck_s\t\t" << std::bitset<1>(global_parameters_.sck_s) << std::endl;
+  // std::cout << "\t  ph_ab\t\t" << std::bitset<1>(global_parameters_.ph_ab) << std::endl;
+  // std::cout << "\t  fd_ab\t\t" << std::bitset<1>(global_parameters_.fd_ab) << std::endl;
+  // std::cout << "\t  dac_ab\t" << std::bitset<1>(global_parameters_.dac_ab) << std::endl;
+  // std::cout << "\t  cs_com_ind\t" << std::bitset<1>(global_parameters_.cs_com_ind) << std::endl;
+  // std::cout << "\t  clk2_div\t" << std::bitset<8>(global_parameters_.clk2_div) << std::endl;
+  // std::cout << "\t  cont_upsdate\t" << std::bitset<1>(global_parameters_.cont_update) << std::endl;
+  // std::cout << "\t  ref_mux\t" << std::bitset<1>(global_parameters_.ref_mux) << std::endl;
+  // std::cout << "\t  mot1r\t\t" << std::bitset<1>(global_parameters_.mot1r) << std::endl;
+  
+  std::cout << "\tClock Conf:\t" << std::endl; // std::bitset<32>(clk_config_.bytes) << std::endl;
+  std::cout << "\t  usrs\t\t" << std::bitset<3>(clk_config_.clk_config.usrs) << std::endl;
+  std::cout << "\t  ramp_div\t" << std::bitset<4>(clk_config_.clk_config.ramp_div) << std::endl;
+  std::cout << "\t  ramp_div\t" << std::dec << clk_config_.clk_config.ramp_div << std::endl;
+  std::cout << "\t  pulse_div\t" << std::bitset<4>(clk_config_.clk_config.pulse_div) << std::endl;
+  std::cout << "\t  pulse_div\t" << std::dec << clk_config_.clk_config.pulse_div << std::endl;
+  
 }
 
 bool TMC429::communicating()
@@ -859,12 +1035,14 @@ void TMC429::setMode(size_t motor,
 {
   if (motor >= MOTOR_COUNT)
   {
+    std::cout << "MOTOR_INDEX bigger than MOTOR_COUNT" << std::endl;
     return;
   }
 
   RefConfMode ref_conf_mode;
   ref_conf_mode.bytes = readRegister(motor, ADDRESS_REF_CONF_MODE);
   ref_conf_mode.mode = (uint8_t)mode;
+  std::cout << "Motor " << motor << " in mode " << ref_conf_mode.mode << std::endl;
   writeRegister(motor, ADDRESS_REF_CONF_MODE, ref_conf_mode.bytes);
 }
 
@@ -937,6 +1115,12 @@ void TMC429::setVelocityMinInHz(size_t motor,
   writeRegister(motor, ADDRESS_V_MIN, velocity_min);
 }
 
+void TMC429::setVelocityMin(size_t motor,
+  uint32_t velocity_min)
+{
+  writeRegister(motor, ADDRESS_V_MIN, velocity_min);
+}
+
 uint16_t TMC429::getVelocityMax(size_t motor)
 {
   return readRegister(motor, ADDRESS_V_MAX);
@@ -951,6 +1135,11 @@ void TMC429::setVelocityMaxInHz(size_t motor,
   {
     velocity_max = velocity_max_upper_limit;
   }
+  writeRegister(motor, ADDRESS_V_MAX, velocity_max);
+}
+
+void TMC429::setVelocityMax(size_t motor, uint32_t velocity_max)
+{
   writeRegister(motor, ADDRESS_V_MAX, velocity_max);
 }
 
@@ -1101,6 +1290,11 @@ uint32_t TMC429::setAccelerationMaxInHzPerS(size_t motor,
   }
   writeRegister(motor, ADDRESS_A_MAX, acceleration_max);
   return acceleration_max;
+}
+
+void TMC429::setAccelerationMaxInStepPerSS(size_t motor, uint32_t acceleration_max)
+{
+  writeRegister(motor, ADDRESS_A_MAX, acceleration_max);
 }
 
 int16_t TMC429::getActualAcceleration(size_t motor)
