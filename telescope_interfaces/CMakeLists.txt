@@ -12,6 +12,8 @@ find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(
   ${PROJECT_NAME}
   "srv/QueryObject.srv"
+  "srv/ChangeFrequency.srv"
+  "srv/SetTarget.srv"
 )
 
 

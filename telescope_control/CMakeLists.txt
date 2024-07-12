@@ -24,14 +24,14 @@ find_package(telescope_interfaces REQUIRED)
 include_directories(include)
 
 # Create Cpp executable
-add_executable(target_acquisition_node src/target_acquisition_node.cpp)
-ament_target_dependencies(target_acquisition_node rclcpp std_msgs telescope_interfaces)
+# add_executable(target_acquisition_node src/target_acquisition_node.cpp)
+# ament_target_dependencies(target_acquisition_node rclcpp std_msgs telescope_interfaces)
 
 
 # Install Cpp executables
 install(TARGETS
         # object_information_node
-        target_acquisition_node
+        # target_acquisition_node
         DESTINATION lib/${PROJECT_NAME}
 )
 
