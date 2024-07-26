@@ -11,8 +11,7 @@ using namespace std::chrono_literals;
 class TimePublisher : public rclcpp::Node
 {
 public:
-  TimePublisher()
-  : Node("time_publisher"), timer_interval_(1s)
+  TimePublisher(): Node("time_publisher"), timer_interval_(1s)
   {
     publisher_ = this->create_publisher<std_msgs::msg::String>("current_time", 10);
     timer_ = this->create_wall_timer(timer_interval_, std::bind(&TimePublisher::publish_time, this));

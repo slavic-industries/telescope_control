@@ -14,6 +14,7 @@ rosidl_generate_interfaces(
   "srv/QueryObject.srv"
   "srv/ChangeFrequency.srv"
   "srv/SetTarget.srv"
+  "msg/TargetPosition.msg"
 )
 
 

@@ -11,11 +11,11 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(telescope_interfaces)
 
-add_executable(time_publisher src/time_publisher.cpp)
-ament_target_dependencies(time_publisher rclcpp std_msgs telescope_interfaces)
+add_executable(time_publisher_node src/time_publisher.cpp)
+ament_target_dependencies(time_publisher_node rclcpp std_msgs telescope_interfaces)
 
 install(TARGETS
-  time_publisher
+  time_publisher_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
