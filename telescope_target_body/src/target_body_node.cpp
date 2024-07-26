@@ -36,11 +36,31 @@ private:
 
     void publish_position()
   {
+    // // Convert ROS 2 time to struct ln_date
+    std::time_t time = this->now().seconds();
+    std::tm *ptm = std::gmtime(&time);
+
+    struct ln_date date;
+    date.years = ptm->tm_year + 1900;
+    date.months = ptm->tm_mon + 1;
+    date.days = ptm->tm_mday;
+    date.hours = ptm->tm_hour;
+    date.minutes = ptm->tm_min;
+    date.seconds = ptm->tm_sec;
+
+    // Convert epoch seconds to Julian Day
+    ln_get_date_from_sys(&date); // get current date as a reference
+    double JD = ln_get_julian_day(&date);
+    
+    // Get the position of the Sun as an example
+    struct ln_equ_posn pos;
+    ln_get_solar_equ_coords(JD, &pos);
 
     auto message = telescope_interfaces::msg::TargetPosition();
-    message.ra = 0.0;
-    message.dec = 0.0;
-    RCLCPP_INFO(this->get_logger(), "RA: %f\tDEC: %f", message.ra, message.dec);
+    message.ra = pos.ra;
+    message.dec = pos.dec;
+    RCLCPP_INFO(this->get_logger(), "RA: %f\tDEC: %f", pos.ra, pos.dec);
+    // RCLCPP_INFO(this->get_logger(), "%d-%d-%d_%d:%d:%f", date.years, date.months, date.days, date.hours, date.minutes, date.seconds);
     current_position_publisher_->publish(message);
   }
 
@@ -56,34 +76,27 @@ private:
         RCLCPP_INFO(this->get_logger(), "Target body changed to: '%s'", new_target_name.c_str());
     }
 
-    std::string get_coordinates() {
-        // // Convert ROS 2 time to struct ln_date
-        // std::time_t time = msg->sec;
-        // std::tm *ptm = std::gmtime(&time);
+    // std::string get_coordinates() {
+    //     // // Convert ROS 2 time to struct ln_date
+    //     std::time_t time = this->now().seconds();
+    //     std::tm *ptm = std::gmtime(&time);
 
-        // struct ln_date date;
-        // date.years = ptm->tm_year + 1900;
-        // date.months = ptm->tm_mon + 1;
-        // date.days = ptm->tm_mday;
-        // date.hours = ptm->tm_hour;
-        // date.minutes = ptm->tm_min;
-        // date.seconds = ptm->tm_sec;
+    //     struct ln_date date;
+    //     date.years = ptm->tm_year + 1900;
+    //     date.months = ptm->tm_mon + 1;
+    //     date.days = ptm->tm_mday;
+    //     date.hours = ptm->tm_hour;
+    //     date.minutes = ptm->tm_min;
+    //     date.seconds = ptm->tm_sec;
 
-        // Convert epoch seconds to Julian Day
-        struct ln_date date;
-        ln_get_date_from_sys(&date); // get current date as a reference
-        double JD = ln_get_julian_day(&date);
+        
 
-        // Get the position of the Sun as an example
-        struct ln_equ_posn pos;
-        ln_get_solar_equ_coords(JD, &pos);
-
-        // Create a string with RA and Dec
-        std::ostringstream oss;
-        oss << "Right Ascension (RA): " << pos.ra << " hours, "
-            << "Declination (Dec): " << pos.dec << " degrees";
-        return oss.str();
-    }
+    //     // Create a string with RA and Dec
+    //     std::ostringstream oss;
+    //     oss << "Right Ascension (RA): " << pos.ra << " hours, "
+    //         << "Declination (Dec): " << pos.dec << " degrees";
+    //     return oss.str();
+    // }
 
     void change_frequency(const std::shared_ptr<telescope_interfaces::srv::ChangeFrequency::Request> request,
                         std::shared_ptr<telescope_interfaces::srv::ChangeFrequency::Response> response)
