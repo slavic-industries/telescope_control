@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(target_body)
+project(telescope_target_body)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -17,7 +17,7 @@ include_directories(
 )
 
 
-add_executable(target_body_node src/target_body.cpp)
+add_executable(target_body_node src/target_body_node.cpp)
 ament_target_dependencies(target_body_node rclcpp std_msgs telescope_interfaces)
 target_link_libraries(target_body_node nova)
 

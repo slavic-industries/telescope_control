@@ -22,10 +22,6 @@ public:
 
         timer_ = this->create_wall_timer(timer_interval_, std::bind(&TargetBodyNode::publish_position, this));
 
-        time_subscription_ = this->create_subscription<std_msgs::msg::String>(
-            "current_time", 10,
-            std::bind(&TargetBodyNode::time_callback, this, std::placeholders::_1)
-        );
         service_ = this->create_service<telescope_interfaces::srv::SetTarget>(
             "set_target", std::bind(&TargetBodyNode::set_target, this, std::placeholders::_1, std::placeholders::_2));
         
@@ -37,26 +33,9 @@ public:
     
 
 private:
-    void time_callback(const std_msgs::msg::String::SharedPtr msg) {
-        // get the curent time
-        std::string time_msg = msg->data;
-        // caculate the target ra and dec position for the given time
-        // publish the new dec and ra target 
-        
-
-
-        // auto message = std_msgs::msg::String();
-        // message.data = msg;
-        // RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
-        RCLCPP_INFO(this->get_logger(), "Received message: '%s'", msg->data.c_str());
-        // publisher_->publish(message);
-    }
 
     void publish_position()
   {
-    // auto message = std_msgs::msg::String();
-    // message.data = "Current time: " + std::to_string(this->now().seconds());
-    // RCLCPP_INFO(this->get_logger(), "%s", message.data.c_str());
 
     auto message = telescope_interfaces::msg::TargetPosition();
     message.ra = 0.0;
@@ -77,7 +56,7 @@ private:
         RCLCPP_INFO(this->get_logger(), "Target body changed to: '%s'", new_target_name.c_str());
     }
 
-    std::string get_coordinates(const std_msgs::msg::String::SharedPtr msg) {
+    std::string get_coordinates() {
         // // Convert ROS 2 time to struct ln_date
         // std::time_t time = msg->sec;
         // std::tm *ptm = std::gmtime(&time);
@@ -124,7 +103,6 @@ private:
 
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
     rclcpp::Publisher<telescope_interfaces::msg::TargetPosition>::SharedPtr current_position_publisher_;
-    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr time_subscription_;
     rclcpp::Service<telescope_interfaces::srv::SetTarget>::SharedPtr service_;
     rclcpp::Service<telescope_interfaces::srv::ChangeFrequency>::SharedPtr change_frequency_service_;
     rclcpp::TimerBase::SharedPtr timer_;
