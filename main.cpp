@@ -86,8 +86,9 @@ int main() {
     std::cerr << "Stepper driver initialization failed." << std::endl;
     return -1;
   }
+  usleep(100000); 
   if(tmc429.communicating()) std::cout << "TMC429 setup and configuration complete!" << std::endl;
-
+  usleep(100000); 
 
 // return 0;
 
@@ -104,7 +105,7 @@ int main() {
 
   tmc429.setPDiv(MOTOR_INDEX, 4);
   tmc429.setPMul(MOTOR_INDEX, 128);
-  tmc429.setPulseDiv(MOTOR_INDEX, 7);
+  tmc429.setPulseDiv(MOTOR_INDEX, 5);
   tmc429.setRampDiv(MOTOR_INDEX, 13);
 
   tmc429.setStepDiv(15);
@@ -119,7 +120,7 @@ int main() {
   tmc429.setVelocityMin(MOTOR_INDEX, 0);
   tmc429.setVelocityMax(MOTOR_INDEX, 2047);
   tmc429.setAccelerationMaxInStepPerSS(MOTOR_INDEX, 2000);
-  // usleep(100000);  
+  usleep(100000);  
   tmc429.setTargetVelocity(MOTOR_INDEX, 0);
 
   std::cout << "***********"<< std::endl;
@@ -139,100 +140,25 @@ int main() {
     std::cerr << "Stepper driver initialization failed." << std::endl;
     return -1;
   }
+  usleep(100000); 
   if(tmc2130.communicating()) std::cout << "TMC2130 setup and configuration complete!" << std::endl;
+  usleep(100000); 
 
-  tmc2130.setHoldCurrent(50);
-  tmc2130.setRunCurrent(30);
+  tmc2130.setHoldCurrent(10);
+  tmc2130.setRunCurrent(40);
 
-  
-
-  
-
+  tmc2130.printSettings();
 
 
+  usleep(3000000);  
+  tmc429.setTargetVelocity(MOTOR_INDEX, 119);
 
+  time_t start_time, elapsed_time;
+  start_time = time(0);
+  elapsed_time = 2; // [s]
 
-  // bool at_target = false;
-  // while(!at_target)
-  // { //;
-  //   std::cout << "Motor at: " << std::bitset<32>(stepper_controller.getActualVelocity(MOTOR_INDEX)) << std::endl;
-  //   at_target = stepper_controller.atTargetVelocity(MOTOR_INDEX);
-  //   usleep(100);
-  // }
-  // std::cout << "Motor at target." << std::endl;
-
-  // usleep(10000000);
-  // stepper_controller.setTargetVelocity(MOTOR_INDEX, 0);
-  // while(!stepper_controller.atTargetVelocity(MOTOR_INDEX));
-  // std::cout << "Motor stopped." << std::endl;
-
-  // return 0;
-  
-  // delta_velocity = VELOCITY_INC;
-  // stepper_controller.setTargetVelocityInHz(MOTOR_INDEX, 0);
-  // usleep(500000);
-  // stepper_controller.setTargetVelocityInHz(MOTOR_INDEX, target_velocity);
-
-  // stepper_driver.enable();
-
-  // std::cout << "Setup Complete!" <<  std::endl;
-
-  // int pwm_pin = 6;
-  // int frequency = 1000; //Hz
-  // int dutyCycle = 120;
-
-  // if (gpioInitialise() < 0) 
-  // {
-  //   std::cerr << "pigpio initialization failed." << std::endl;
-  //   return 1;
-  // }
-
-  // gpioSetPWMfrequency(pwm_pin, frequency);
-  // gpioPWM(pwm_pin, dutyCycle);
-  // time_t t_start = time(0);
-  // long dt = 6;
-  // dt = 1000000;
-  // gpioSetMode(13, PI_OUTPUT);
-  // gpioPWM(13, 50);
-  // gpioSetPWMfrequency(13, 100);
-  // usleep(dt);
-  // gpioSetPWMfrequency(13, 200);
-  // usleep(dt);
-  // gpioSetPWMfrequency(13, 300);
-  // usleep(dt);
-  // gpioSetPWMfrequency(13, 400);
-  // usleep(dt);
-  // gpioSetPWMfrequency(13, 500);
-  // usleep(dt);
-  // gpioSetPWMfrequency(13, 600);
-  // usleep(dt);
-  // gpioSetPWMfrequency(13, 700);
-  // usleep(dt);
-  // gpioSetPWMfrequency(13, 800);
-  // usleep(dt);
-  // target_velocity = 10000;
-  // tmc429.setTargetVelocityInHz(MOTOR_INDEX, target_velocity);
   while(1)
   {
-    // tmc429.setTargetVelocityInHz(MOTOR_INDEX, target_velocity);
-    // at_target_velocity = tmc429.atTargetVelocity(MOTOR_INDEX);
-    // std::cout << "at target velocity: ";
-    // std::cout << at_target_velocity;
-
-    // std::cout << "\ttarget velocity (Hz): ";
-    // std::cout << target_velocity;
-
-    // actual_velocity = tmc429.getActualVelocityInHz(MOTOR_INDEX);
-    // std::cout << "\tactual velocity (Hz): ";
-    // std::cout << std::dec << actual_velocity << std::endl;
-
-    // // if ((time(0) - t_start) > dt)
-    // // {
-    // //   t_start = time(0);
-    // //   target_velocity = target_velocity == 0 ? 100 : 0;
-    // //   std::cout << "Target velocity set: " << target_velocity << std::endl;
-    // //   tmc429.setTargetVelocityInHz(MOTOR_INDEX, target_velocity);
-    // // }
 
     usleep(100000);
     // tmc429.printSettingsMotor0();
@@ -240,9 +166,12 @@ int main() {
     tmc2130.printSettings();
 
 
-
+    if(time(0) - start_time > elapsed_time) break;
 
   }
+
+  tmc429.setTargetVelocity(MOTOR_INDEX, 0);
+  std::cout << "Loop complete." << std::endl;
 
   return 0;
 }
