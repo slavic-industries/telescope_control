@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'telescope_skyfield_database'
+package_name = 'telescope_target_data'
 
 setup(
     name=package_name,
@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            "target_data_node = telescope_target_data.target_data_node:main"
         ],
     },
 )

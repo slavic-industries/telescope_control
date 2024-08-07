@@ -1,0 +1,8 @@
+float64 lat
+float64 lon
+float64 alt
+float64 press
+float64 temp
+float64 rel_humid
+---
+bool success
