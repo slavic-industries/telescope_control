@@ -71,6 +71,7 @@ class TargetData(Node):
         self.observer_pressure = float(request.press)
         self.observer_temperature = float(request.temp)
         self.observer_rel_humid = float(request.rel_humid)
+        self.observer_timezone = float(request.time_zone)
         self.observer = EarthLocation.from_geodetic(self.observer_longitude,
                                                     self.observer_lattitude,
                                                     self.observer_elevation)
@@ -87,8 +88,8 @@ class TargetData(Node):
             try:
                 self.target_body_info = get_body(
                     self.target_name, t, self.observer)
-                altaz_frame = AltAz(
-                    obstime=t, location=self.observer, timezone='UTC')
+                altaz_frame = AltAz(obstime=t,
+                                    location=self.observer)
                 altaz_coor = self.target_body_info.transform_to(altaz_frame)
                 self.target_alt = altaz_coor.alt.deg
                 self.target_az = altaz_coor.az.deg

@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'telescope_target_data'
+package_name = 'telescope_http_server'
 
 setup(
     name=package_name,
@@ -14,13 +14,13 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='kt',
-    maintainer_email='kacper.turek@.com',
+    maintainer_email='kacper.turek@at.com',
     description='TODO: Package description',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "target_data_node = telescope_target_data.target_data_node:main"
+            'http_server_node = telescope_http_server.http_server_node:main',
         ],
     },
 )

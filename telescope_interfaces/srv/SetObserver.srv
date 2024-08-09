@@ -4,5 +4,6 @@ float64 alt
 float64 press
 float64 temp
 float64 rel_humid
+string time_zone
 ---
 bool success

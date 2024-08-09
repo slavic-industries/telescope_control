@@ -42,8 +42,8 @@ from astroquery.gaia import Gaia
 
 
 t = Time.now()
-longitude = 56.949191  # '-155d28m48.900s'
-latitude = 9.866358  # '+19d49m42.600s'
+longitude = 01.949191  # '-155d28m48.900s'
+latitude = 17.866358  # '+19d49m42.600s'
 elevation = 4163 * u.m
 location = EarthLocation.from_geodetic(longitude, latitude, elevation)
 
