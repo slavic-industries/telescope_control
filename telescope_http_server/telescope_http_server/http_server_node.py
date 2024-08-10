@@ -45,10 +45,12 @@ class HttpRequestHandler(http.server.SimpleHTTPRequestHandler):
             # Retry mechanism with timeout
             max_attempts = 5
             attempts = 0
-            success = False
+            service_found = False
             response_message = "Service call failed after 5 attempts."
 
             while attempts < max_attempts:
+                if service_found:
+                    break
                 if client.wait_for_service(timeout_sec=1.0):
                     future = client.call_async(request)
                     rclpy.spin_until_future_complete(self.server.node, future)
@@ -65,16 +67,18 @@ class HttpRequestHandler(http.server.SimpleHTTPRequestHandler):
                             f"Target ALT: {future.result().alt}")
                         self.server.node.get_logger().info(
                             f"Target AZ: {future.result().az}")
-
-                        response_message = f"Target NAME: {future.result().target_name}\r\nTarget RA: {future.result().ra}\r\nTarget DEC: {future.result().dec}/r/nTarget DIST: {future.result().dist}\r\nTarget ALT: {future.result().alt}\r\nTarget AZ: {future.result().az}"
-
-                        break
+                        service_found = True
+                        response_message = f"Target NAME: {future.result().target_name}\r\nTarget RA: {future.result().ra}\r\nTarget DEC: {future.result().dec}\r\nTarget DIST: {future.result().dist}\r\nTarget ALT: {future.result().alt}\r\nTarget AZ: {future.result().az}"
+                    else:
+                        response_message = "Object cannot be found in the database."
+                        self.server.node.get_logger().info(response_message)
+                        service_found = True
                 else:
                     self.server.node.get_logger().info(
                         f"Service not available, attempt {attempts + 1}/{max_attempts}")
                 attempts += 1
 
-            # Send response back to the browser
+        # Send response back to the browser
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
