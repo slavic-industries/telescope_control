@@ -32,3 +32,47 @@ sudo udevadm trigger
 ```
 sudo usermod -aG gpio <username>
 ```
+
+### ROS2 Nodes
+
+#### target_data_node
+
+- Description: Provides data about celestial targets.
+- Subscribers:
+- Publishers:
+- Service Servers:
+    - `/request_target_data [telescope_interfaces/srv/RequestTargetData]`
+    - `/set_observer [telescope_interfaces/srv/SetObserver]`
+- Service Clients:
+
+
+### ROS2 Services
+
+#### Set Observer
+
+```
+float64 lat
+float64 lon
+float64 alt
+float64 press
+float64 temp
+float64 rel_humid
+string time_zone
+---
+bool success
+```
+
+- Server: `target_data_node`
+- Description: Set the observer position on the Earth to get corect target coordinates
+
+#### Set Target
+
+```
+string target_name
+---
+bool success
+string message
+```
+
+- Server: `telescope_target_data_node`
+- Description: Get target data.
