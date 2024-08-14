@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 from telescope_interfaces.srv import RequestTargetData
 from telescope_interfaces.srv import SetObserver
+from telescope_interfaces.msg import TargetAltAz
 
 import astropy.units as u
 from astropy.time import Time
@@ -16,13 +17,19 @@ class TargetData(Node):
 
     def __init__(self):
         super().__init__('target_data')
-        self.service = self.create_service(
+
+        self.publisher_target_alt_az = self.create_publisher(TargetAltAz, 'target_alt_az', 10)     # CHANGE
+        
+        timer_period = 0.02
+        self.timer_target_alt_az = self.create_timer(timer_period, self.target_alt_az_callback)
+
+        self.service_request_target_data = self.create_service(
             RequestTargetData,
             "request_target_data",
             self.request_target_data_callback
         )
 
-        self.service = self.create_service(
+        self.service_set_observer = self.create_service(
             SetObserver,
             "set_observer",
             self.set_observer_callback
@@ -51,6 +58,27 @@ class TargetData(Node):
 
         self.get_logger().info(f"'{self.get_name()}' node created")
 
+    def target_alt_az_callback(self):
+        msg = TargetAltAz()
+        if self.target_name != "None":
+            t = Time.now()
+
+            self.target_body_info = get_body(
+                    self.target_name, t, self.observer)
+            altaz_frame = AltAz(obstime=t,
+                                location=self.observer)
+            altaz_coor = self.target_body_info.transform_to(altaz_frame)
+            self.target_alt = altaz_coor.alt.deg
+            self.target_az = altaz_coor.az.deg
+
+            msg.alt = float(self.target_alt)
+            msg.az = float(self.target_az)
+            msg.alt_deg = altaz_coor.alt.to_string(unit=u.deg, sep=':', pad=True)
+            msg.az_deg = altaz_coor.az.to_string(unit=u.deg, sep=':', pad=True)
+
+            self.publisher_target_alt_az.publish(msg)
+            self.get_logger().info(f"Az: {msg.az_deg}\tAlt: {msg.alt_deg}")
+
     def request_target_data_callback(self, request, response):
         self.target_name = request.target_name
         response.success = self._get_target_info()
@@ -71,7 +99,7 @@ class TargetData(Node):
         self.observer_pressure = float(request.press)
         self.observer_temperature = float(request.temp)
         self.observer_rel_humid = float(request.rel_humid)
-        self.observer_timezone = float(request.time_zone)
+        self.observer_timezone = request.time_zone
         self.observer = EarthLocation.from_geodetic(self.observer_longitude,
                                                     self.observer_lattitude,
                                                     self.observer_elevation)
@@ -82,9 +110,9 @@ class TargetData(Node):
     def _get_target_info(self):
         with solar_system_ephemeris.set('builtin'):
             t = Time.now()
-            self.observer = EarthLocation.from_geodetic(self.observer_longitude,
-                                                        self.observer_lattitude,
-                                                        self.observer_elevation)
+            # self.observer = EarthLocation.from_geodetic(self.observer_longitude,
+            #                                             self.observer_lattitude,
+            #                                             self.observer_elevation)
             try:
                 self.target_body_info = get_body(
                     self.target_name, t, self.observer)

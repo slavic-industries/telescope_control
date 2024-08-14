@@ -17,6 +17,7 @@ rosidl_generate_interfaces(
   "srv/RequestTargetData.srv"
   "srv/SetObserver.srv"
   "msg/TargetPosition.msg"
+  "msg/TargetAltAz.msg"
 )
 
 
