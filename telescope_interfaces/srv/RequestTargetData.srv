@@ -1,0 +1,9 @@
+string target_name
+---
+bool success
+string target_name
+float64 ra
+float64 dec
+float64 dist
+float64 alt
+float64 az
