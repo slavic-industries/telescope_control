@@ -2,7 +2,7 @@ import rclpy
 from rclpy.node import Node
 from telescope_interfaces.srv import RequestTargetData
 from telescope_interfaces.srv import SetObserver
-from telescope_interfaces.msg import TargetAltAz
+from telescope_interfaces.msg import TargetCoordinates
 
 import astropy.units as u
 from astropy.time import Time
@@ -18,10 +18,12 @@ class TargetData(Node):
     def __init__(self):
         super().__init__('target_data')
 
-        self.publisher_target_alt_az = self.create_publisher(TargetAltAz, 'target_alt_az', 10)     # CHANGE
-        
+        self.publisher_target_alt_az = self.create_publisher(
+            TargetCoordinates, 'target_coordinates', 10)     # CHANGE
+
         timer_period = 0.02
-        self.timer_target_alt_az = self.create_timer(timer_period, self.target_alt_az_callback)
+        self.timer_target_alt_az = self.create_timer(
+            timer_period, self.target_alt_az_callback)
 
         self.service_request_target_data = self.create_service(
             RequestTargetData,
@@ -59,35 +61,32 @@ class TargetData(Node):
         self.get_logger().info(f"'{self.get_name()}' node created")
 
     def target_alt_az_callback(self):
-        msg = TargetAltAz()
+        msg = TargetCoordinates()
         if self.target_name != "None":
             t = Time.now()
 
             self.target_body_info = get_body(
-                    self.target_name, t, self.observer)
+                self.target_name, t, self.observer)
             altaz_frame = AltAz(obstime=t,
                                 location=self.observer)
             altaz_coor = self.target_body_info.transform_to(altaz_frame)
-            self.target_alt = altaz_coor.alt.deg
-            self.target_az = altaz_coor.az.deg
 
-            msg.alt = float(self.target_alt)
-            msg.az = float(self.target_az)
-            msg.alt_deg = altaz_coor.alt.to_string(unit=u.deg, sep=':', pad=True)
+            msg.alt = float(altaz_coor.alt.deg)
+            msg.az = float(altaz_coor.az.deg)
+            msg.ra = float(self.target_body_info.ra.hour)
+            msg.dec = float(self.target_body_info.dec.deg)
+            msg.alt_deg = altaz_coor.alt.to_string(
+                unit=u.deg, sep=':', pad=True)
             msg.az_deg = altaz_coor.az.to_string(unit=u.deg, sep=':', pad=True)
 
             self.publisher_target_alt_az.publish(msg)
-            self.get_logger().info(f"Az: {msg.az_deg}\tAlt: {msg.alt_deg}")
+            # self.get_logger().info(f"Az: {msg.az_deg}\tAlt: {msg.alt_deg}")
 
     def request_target_data_callback(self, request, response):
         self.target_name = request.target_name
         response.success = self._get_target_info()
         response.target_name = self.target_name
-        response.ra = self.target_body_info.ra.hour
-        response.dec = self.target_body_info.dec.deg
         response.dist = self.target_body_info.distance.to(u.m).value
-        response.alt = self.target_alt
-        response.az = self.target_az
         self.get_logger().info(
             f"service: 'request_target_data': request.target_name='{request.target_name}'")
         return response

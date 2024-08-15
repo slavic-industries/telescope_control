@@ -1,6 +1,9 @@
 /build
 /install
 /log
+/src/build
+/src/install
+/src/log
 arduino/telescope_module_testing/.vscode
 /.vscode
 
