@@ -86,11 +86,18 @@ int main() {
     std::cerr << "Stepper driver initialization failed." << std::endl;
     return -1;
   }
-  usleep(100000); 
-  if(tmc429.communicating()) std::cout << "TMC429 setup and configuration complete!" << std::endl;
+  std::cerr << "TMC429 version: " << tmc429.getVersion() << std::endl;
+  std::cerr << "TMC429 communi: " << tmc429.communicating() << std::endl;
+
+
+  if(!tmc429.communicating()){
+    std::cout << "TMC429 setup and configuration NOT complete!" << std::endl;
+    return -1;
+  }
+  std::cout << "TMC429 setup and configuration complete!" << std::endl;
   usleep(100000); 
 
-// return 0;
+
 
 
   // stepper_controller.setup(CHIP_SELECT_PIN, CLOCK_FREQUENCY_MHZ);
@@ -120,18 +127,15 @@ int main() {
   tmc429.setVelocityMin(MOTOR_INDEX, 0);
   tmc429.setVelocityMax(MOTOR_INDEX, 2047);
   tmc429.setAccelerationMaxInStepPerSS(MOTOR_INDEX, 2000);
-  usleep(100000);  
-  tmc429.setTargetVelocity(MOTOR_INDEX, 0);
+  // usleep(100000);  
+  tmc429.setTargetVelocity(MOTOR_INDEX, 119);
 
-  std::cout << "***********"<< std::endl;
-  std::cout << "***********"<< std::endl;
+  return 0;
   std::cout << "***********"<< std::endl;
   std::cout << "Motor Setup"<< std::endl;
   std::cout << "***********"<< std::endl;
-  std::cout << "***********"<< std::endl;
-  std::cout << "***********"<< std::endl;
-  tmc429.printSettingsMotor0();
-  // return 0;
+  // tmc429.printSettingsMotor0();
+  
 
 
   std::cout << "TMC2130 Setup " << std::endl;
@@ -147,26 +151,28 @@ int main() {
   tmc2130.setHoldCurrent(10);
   tmc2130.setRunCurrent(40);
 
-  tmc2130.printSettings();
+  // tmc2130.printSettings();
 
 
-  usleep(3000000);  
-  tmc429.setTargetVelocity(MOTOR_INDEX, 119);
-
+  // usleep(3000000);  
+  tmc429.setTargetVelocity(MOTOR_INDEX, 255);
+ // 119
   time_t start_time, elapsed_time;
   start_time = time(0);
-  elapsed_time = 2; // [s]
+  elapsed_time = 10; // [s]
 
   while(1)
   {
 
-    usleep(100000);
+    usleep(500000);
     // tmc429.printSettingsMotor0();
-    usleep(100000);
-    tmc2130.printSettings();
+    // usleep(100000);
+    // tmc2130.printSettings();
+
+    std::cout << float(time(0) - start_time) << std::endl;
 
 
-    if(time(0) - start_time > elapsed_time) break;
+    if((time(0) - start_time) >= elapsed_time) break;
 
   }
 

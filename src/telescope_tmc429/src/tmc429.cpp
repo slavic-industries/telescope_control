@@ -6,20 +6,21 @@
 //
 // Modified to work with pigpio library
 // ----------------------------------------------------------------------------
-#include "tmc429.h"
+#include "telescope_tmc429/tmc429.h"
 #include <bitset>
 
 TMC429::TMC429()
 {
+    // wiringPiSetup();
   // std::cerr << "TMC429 object created" << std::endl;
 }
 
 TMC429::~TMC429()
 { 
-  // stopAll();
+  stopAll();
   if(initialized)
   {
-    spiClose(spi_handle);
+    // wiringPiSPIClose(spi_channel);
     initialized = false;
   }
   std::cerr << "TMC429 object destroyed" << std::endl;
@@ -30,26 +31,51 @@ uint8_t TMC429::setup(size_t chip_select_pin, uint8_t spi_device)
   chip_select_pin_ = chip_select_pin;
   spi_channel = spi_device;
 
-  if (gpioInitialise() < 0) {
+  if (wiringPiSetup() != 0) {
     std::cerr << "pigpio initialization failed" << std::endl;
     return 1;
   }
 
-  gpioSetMode(chip_select_pin_,PI_OUTPUT);
-  gpioWrite(chip_select_pin_,PI_LOW);
+  pinMode(chip_select_pin_, OUTPUT);
+  digitalWrite(chip_select_pin_, HIGH);
+  
+  digitalWrite(chip_select_pin_, LOW);
+  usleep(1000);
+  digitalWrite(chip_select_pin_, HIGH);
 
-  spi_handle = spiOpen(spi_channel, SPI_CLOCK, 0x03);
-  if (spi_handle < 0) {
+  pinMode(29, OUTPUT);
+
+  digitalWrite(29, HIGH);
+  usleep(1000000);
+  digitalWrite(29, LOW);
+
+  
+  
+
+  // spi_handle = spiOpen(spi_channel, SPI_CLOCK, 0x03);
+  spi_handle = wiringPiSPISetup(spi_channel, 1000000);
+  std::cerr << "spi._handle = " << spi_handle << std::endl;
+  if (spi_handle != 0) {
     std::cerr << "spiOpen failed." << std::endl;
-    return 1;
+    return 2;
   }
-  std::cout << "TMC429 SPI Handle (setup): " << std::hex << spi_handle << std::endl;
+  // std::cout << "TMC429 SPI Handle (setup): " << std::hex << spi_handle << std::endl;
 
   for (uint8_t motor=0; motor<MOTOR_COUNT; ++motor)
   {
     pulse_div_[motor] = 0;
     ramp_div_[motor] = 0;
   }
+
+  // setStepDiv(STEP_DIV_MAX);
+  // setStepDirOutput();
+
+  // stopAll();
+
+
+  // initialize();
+
+  // printSettingsMotor0();
 
   initialized = true;
 
@@ -876,20 +902,25 @@ TMC429::MisoDatagram TMC429::writeRead(MosiDatagram mosi_datagram)
   MisoDatagram miso_datagram;
   miso_datagram.bytes = 0x0;
   // beginTransaction();
-  gpioWrite(chip_select_pin_, PI_LOW);
+  digitalWrite(chip_select_pin_, LOW);
   // usleep(1);
   for (int i=(DATAGRAM_SIZE - 1); i>=0; --i)
   {
-    char byte_write[1];
-    char byte_read[1];
-    byte_write[0] = (mosi_datagram.bytes >> (8*i)) & 0xff;
-    uint8_t spi_status = spiXfer(spi_handle, byte_write, byte_read, 1);
+    // char byte_write[1];
+    // char byte_read[1];
+    // byte_write[0] = (mosi_datagram.bytes >> (8*i)) & 0xff;
+    // uint8_t spi_status = spiXfer(spi_handle, byte_write, byte_read, 1);
+    // miso_datagram.bytes |= ((uint32_t)byte_read[0]) << (8*i);
+    
+    unsigned char byte_transfer[1];
+    byte_transfer[0] = (mosi_datagram.bytes >> (8*i)) & 0xff;
+    wiringPiSPIDataRW(spi_handle, byte_transfer, 1);
+    miso_datagram.bytes |= ((uint32_t)byte_transfer[0]) << (8*i);
 
-    miso_datagram.bytes |= ((uint32_t)byte_read[0]) << (8*i);
   }
   // endTransaction();
   // usleep(1);
-  gpioWrite(chip_select_pin_, PI_HIGH);
+  digitalWrite(chip_select_pin_, HIGH);
   status_ = miso_datagram.status;
   return miso_datagram;
 }
@@ -1348,12 +1379,12 @@ void TMC429::setOptimalPropFactor(size_t motor,
 
 void TMC429::enableChipSelect()
 {
-  gpioWrite(chip_select_pin_, PI_LOW);
+  digitalWrite(chip_select_pin_, LOW);
 }
 
 void TMC429::disableChipSelect()
 {
-  gpioWrite(chip_select_pin_, PI_HIGH);
+  digitalWrite(chip_select_pin_, HIGH);
 }
 
 void TMC429::beginTransaction()
