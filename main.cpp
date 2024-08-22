@@ -78,8 +78,32 @@ int main() {
   clock_generator.enableOutputs(true);
   std::cout << "SI5351 setup and configuration complete!" << std::endl;
 
-  
 
+
+  std::cout << "***********"<< std::endl;
+  std::cout << "TMC2130 Setup " << std::endl;
+
+  if(tmc2130.setup(TMC2130_CS_PIN, SPI_CHANNEL))
+  {
+    std::cerr << "Stepper driver initialization failed." << std::endl;
+    return -1;
+  }
+  // usleep(100000); 
+  if(!tmc2130.communicating())
+  {
+    std::cout << "TMC2130 not communicating." << std::endl;
+    return -1;
+  }
+  // usleep(100000); 
+  
+  tmc2130.enableStealthChop();
+  // tmc2130.enableAutomaticCurrentScaling();
+  usleep(100000); 
+  tmc2130.setHoldCurrent(10);
+  tmc2130.setRunCurrent(10);
+
+  
+  std::cout << "***********"<< std::endl;
   std::cout << "TMC429 Setup " << std::endl;
   if(tmc429.setup(TMC429_CS_PIN, SPI_CHANNEL) != 0)
   {
@@ -97,19 +121,6 @@ int main() {
   std::cout << "TMC429 setup and configuration complete!" << std::endl;
   usleep(100000); 
 
-
-
-
-  // stepper_controller.setup(CHIP_SELECT_PIN, CLOCK_FREQUENCY_MHZ);
-  
-  // tmc429.disableRightSwitches();
-  // tmc429.setVelocityMode(MOTOR_INDEX);
-  // tmc429.setLimitsInHz(MOTOR_INDEX, VELOCITY_MIN, VELOCITY_MAX, ACCELERATION_MAX);
-
-  // target_velocity = 0;
-  // delta_velocity = VELOCITY_INC;
-  // tmc429.setTargetVelocityInHz(MOTOR_INDEX, target_velocity);
-
   tmc429.setPDiv(MOTOR_INDEX, 4);
   tmc429.setPMul(MOTOR_INDEX, 128);
   tmc429.setPulseDiv(MOTOR_INDEX, 5);
@@ -125,41 +136,24 @@ int main() {
   tmc429.disableInverseDirPolarity();
 
   tmc429.setVelocityMin(MOTOR_INDEX, 0);
+  usleep(1000);
   tmc429.setVelocityMax(MOTOR_INDEX, 2047);
+  usleep(1000);
   tmc429.setAccelerationMaxInStepPerSS(MOTOR_INDEX, 2000);
-  // usleep(100000);  
-  tmc429.setTargetVelocity(MOTOR_INDEX, 119);
-
-  return 0;
-  std::cout << "***********"<< std::endl;
-  std::cout << "Motor Setup"<< std::endl;
-  std::cout << "***********"<< std::endl;
-  // tmc429.printSettingsMotor0();
+  usleep(1000);  
+  tmc429.setTargetVelocity(MOTOR_INDEX, 2047);
+  std::cout << "Target Velocity: " <<  tmc429.getTargetVelocity(MOTOR_INDEX) << std::endl;
   
 
+  
 
-  std::cout << "TMC2130 Setup " << std::endl;
-  if(tmc2130.setup(TMC2130_CS_PIN, SPI_CHANNEL))
-  {
-    std::cerr << "Stepper driver initialization failed." << std::endl;
-    return -1;
-  }
-  usleep(100000); 
-  if(tmc2130.communicating()) std::cout << "TMC2130 setup and configuration complete!" << std::endl;
-  usleep(100000); 
-
-  tmc2130.setHoldCurrent(10);
-  tmc2130.setRunCurrent(40);
-
-  // tmc2130.printSettings();
-
-
-  // usleep(3000000);  
-  tmc429.setTargetVelocity(MOTOR_INDEX, 255);
- // 119
   time_t start_time, elapsed_time;
   start_time = time(0);
   elapsed_time = 10; // [s]
+
+  TMC2130::Status tmc_status;
+  tmc_status = tmc2130.getStatus();
+  std::cout << "Over temp warning: " << tmc_status.over_temperature_warning << std::endl;
 
   while(1)
   {
@@ -178,6 +172,7 @@ int main() {
 
   tmc429.setTargetVelocity(MOTOR_INDEX, 0);
   std::cout << "Loop complete." << std::endl;
+  tmc429.stop(MOTOR_INDEX);
 
   return 0;
 }
