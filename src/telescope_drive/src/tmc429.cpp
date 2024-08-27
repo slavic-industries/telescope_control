@@ -17,25 +17,25 @@ TMC429::TMC429()
 
 TMC429::~TMC429()
 { 
-  stopAll();
+  // stopAll();
   if(initialized)
   {
-    // wiringPiSPIClose(spi_channel);
+    // wiringPiSPIClose(this->spi_channel);
     initialized = false;
   }
-  std::cerr << "TMC429 object destroyed" << std::endl;
+  // std::cerr << "TMC429 object destroyed" << std::endl;
 }
 
 uint8_t TMC429::setup(size_t chip_select_pin, uint8_t spi_device)
 {
   this->chip_select_pin_ = chip_select_pin;
   this->spi_channel = spi_device;
-  this->spi_channel = 1;
+  // spi_channel = 0;
 
   std::cout << "spi_channel = " << int(this->spi_channel) << std::endl;
 
   if (wiringPiSetup() != 0) {
-    std::cerr << "pigpio initialization failed" << std::endl;
+    // std::cerr << "pigpio initialization failed" << std::endl;
     return 1;
   }
 
@@ -43,14 +43,12 @@ uint8_t TMC429::setup(size_t chip_select_pin, uint8_t spi_device)
   digitalWrite(this->chip_select_pin_, HIGH);
 
   // spi_handle = spiOpen(spi_channel, SPI_CLOCK, 0x03);
-  spi_handle = wiringPiSPISetup(int(this->spi_channel), 1000000);
-  std::cout << "spi_channel = " << int(this->spi_channel) << std::endl;
-  std::cout << "spi_handle = " << int(spi_handle) << std::endl;
+  spi_handle = wiringPiSPISetupMode(this->spi_channel, 500000, 3);
   if (spi_handle == -1) {
-    std::cout << "Failed to initialize SPI!" << std::endl;
+    // std::cout << "Failed to initialize SPI!" << std::endl;
     return 2;
   }
-  // std::cout << "TMC429 SPI Handle (setup): " << std::hex << spi_handle << std::endl;
+  std::cout << "TMC429 SPI Handle (setup): " << std::hex << spi_handle << std::endl;
 
   for (uint8_t motor=0; motor<MOTOR_COUNT; ++motor)
   {
@@ -857,65 +855,7 @@ void TMC429::setStepDirOutput()
 //   writeRegister(SMDA_COMMON, ADDRESS_IF_CONFIGURATION_429, if_conf.bytes);
 // }
 
-uint32_t TMC429::readRegister(uint8_t smda,
-  uint8_t address)
-{ 
-  // std::cout << "TMC429 - Reading Addr: " << std::bitset<8>(address) << std::endl;
-  MosiDatagram mosi_datagram;
-  mosi_datagram.rrs = RRS_REGISTER;
-  mosi_datagram.address = address;
-  mosi_datagram.smda = smda;
-  mosi_datagram.rw = RW_READ;
-  mosi_datagram.data = 0;
-  // std::cout << "TMC429 - Sending  Datagram: " << std::bitset<32>(mosi_datagram.bytes) << std::endl;
-  MisoDatagram miso_datagram = writeRead(mosi_datagram);
-  // std::cout << "TMC429 - Received Datagram: " << std::bitset<32>(miso_datagram.bytes) << std::endl << std::endl;
-  
-  return miso_datagram.data;
-}
 
-void TMC429::writeRegister(uint8_t smda,
-  uint8_t address,
-  uint32_t data)
-{
-  MosiDatagram mosi_datagram;
-  mosi_datagram.rrs = RRS_REGISTER;
-  mosi_datagram.address = address;
-  mosi_datagram.smda = smda;
-  mosi_datagram.rw = RW_WRITE;
-  mosi_datagram.data = data;
-  // std::cout << "TMC429 - Sending  Datagram: " << std::bitset<32>(mosi_datagram.bytes) << std::endl << std::endl;
-  writeRead(mosi_datagram);
-}
-
-TMC429::MisoDatagram TMC429::writeRead(MosiDatagram mosi_datagram)
-{
-  MisoDatagram miso_datagram;
-  miso_datagram.bytes = 0x0;
-  // beginTransaction();
-  digitalWrite(chip_select_pin_, LOW);
-  // usleep(1);
-  for (int i=(DATAGRAM_SIZE - 1); i>=0; --i)
-  {
-    // char byte_write[1];
-    // char byte_read[1];
-    // byte_write[0] = (mosi_datagram.bytes >> (8*i)) & 0xff;
-    // uint8_t spi_status = spiXfer(spi_handle, byte_write, byte_read, 1);
-    // miso_datagram.bytes |= ((uint32_t)byte_read[0]) << (8*i);
-    
-    unsigned char byte_transfer[1];
-    byte_transfer[0] = (mosi_datagram.bytes >> (8*i)) & 0xff;
-    // wiringPiSPIDataRW(spi_handle, byte_transfer, 1);
-    wiringPiSPIDataRW(spi_channel, byte_transfer, 1);
-    miso_datagram.bytes |= ((uint32_t)byte_transfer[0]) << (8*i);
-
-  }
-  // endTransaction();
-  // usleep(1);
-  digitalWrite(chip_select_pin_, HIGH);
-  status_ = miso_datagram.status;
-  return miso_datagram;
-}
 
 int32_t TMC429::unsignedToSigned(uint32_t input_value,
   uint8_t num_bits)
@@ -1391,4 +1331,53 @@ void TMC429::endTransaction()
   
   disableChipSelect();
   // usleep(10);
+}
+
+uint32_t TMC429::readRegister(uint8_t smda,
+  uint8_t address)
+{ 
+  // std::cout << "TMC429 - Reading Addr: " << std::bitset<8>(address) << std::endl;
+  MosiDatagram mosi_datagram;
+  mosi_datagram.rrs = RRS_REGISTER;
+  mosi_datagram.address = address;
+  mosi_datagram.smda = smda;
+  mosi_datagram.rw = RW_READ;
+  mosi_datagram.data = 0;
+  // std::cout << "TMC429 - Sending  Datagram: " << std::bitset<32>(mosi_datagram.bytes) << std::endl;
+  MisoDatagram miso_datagram = writeRead(mosi_datagram);
+  miso_datagram = writeRead(mosi_datagram);
+  // std::cout << "TMC429 - Received Datagram: " << std::bitset<32>(miso_datagram.bytes) << std::endl << std::endl;
+  
+  return miso_datagram.data;
+}
+
+void TMC429::writeRegister(uint8_t smda,
+  uint8_t address,
+  uint32_t data)
+{
+  MosiDatagram mosi_datagram;
+  mosi_datagram.rrs = RRS_REGISTER;
+  mosi_datagram.address = address;
+  mosi_datagram.smda = smda;
+  mosi_datagram.rw = RW_WRITE;
+  mosi_datagram.data = data;
+  // std::cout << "TMC429 - Sending  Datagram: " << std::bitset<32>(mosi_datagram.bytes) << std::endl << std::endl;
+  writeRead(mosi_datagram);
+}
+
+TMC429::MisoDatagram TMC429::writeRead(MosiDatagram mosi_datagram)
+{
+  MisoDatagram miso_datagram;
+  miso_datagram.bytes = 0x0;
+  digitalWrite(chip_select_pin_, LOW);
+  for (int i=(DATAGRAM_SIZE - 1); i>=0; --i)
+  {   
+    unsigned char byte_transfer[1];
+    byte_transfer[0] = (mosi_datagram.bytes >> (8*i)) & 0xff;
+    wiringPiSPIDataRW(spi_channel, byte_transfer, 1);
+    miso_datagram.bytes |= ((uint32_t)byte_transfer[0]) << (8*i);
+  }
+  digitalWrite(chip_select_pin_, HIGH);
+  status_ = miso_datagram.status;
+  return miso_datagram;
 }

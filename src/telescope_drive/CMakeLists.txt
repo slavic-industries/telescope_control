@@ -13,18 +13,20 @@ find_package(telescope_interfaces)
 include_directories(include/)
 
 find_library(WIRINGPI wiringPi REQUIRED)
+# find_library(PIGPIO pigpio REQUIRED)
 
 add_executable(
   drive_node 
   src/drive_node.cpp
   src/tmc429.cpp
-  # src/tmc2130.cpp
+  src/tmc2130.cpp
   )
 
 ament_target_dependencies(drive_node rclcpp telescope_interfaces)
 
 # Link WiringPi library
 target_link_libraries(drive_node ${WIRINGPI})
+# target_link_libraries(drive_node ${PIGPIO})
 
 install(TARGETS
   drive_node
