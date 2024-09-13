@@ -13,9 +13,10 @@ rosidl_generate_interfaces(
   ${PROJECT_NAME}
   "srv/QueryObject.srv"
   "srv/ChangeFrequency.srv"
-  "srv/SetTarget.srv"
   "srv/RequestTargetData.srv"
+  "srv/SetLedMode.srv"
   "srv/SetObserver.srv"
+  "srv/SetTarget.srv"
   "msg/TargetPosition.msg"
   "msg/TargetCoordinates.msg"
 )

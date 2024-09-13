@@ -1,0 +1,4 @@
+int32 mode                  # Led Blink Mode: 0=OFF, 1=ON, 2=Fade, 3=Sequence
+float64 fade_frequency
+---
+bool success

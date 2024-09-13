@@ -9,3 +9,5 @@ arduino/telescope_module_testing/.vscode
 
 *.bsp
 *.dat
+*.o
+output
