@@ -519,7 +519,7 @@ uint32_t TMC2130::sendReceivePrevious(TMC2130::MosiDatagram & mosi_datagram)
 
     uint8_t spi_status_ = spiXfer(spi_handle, byte_write, byte_read, 1);
 
-    // std::cout << "Byte received: " << std::bitset<8>(byte_read[0]) << std::endl;
+    std::cout << "Byte received: " << std::bitset<8>(byte_read[0]) << std::endl;
 
     miso_datagram.uint64 |= byte_read[0] << (8*i);
   }

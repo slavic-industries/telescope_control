@@ -238,6 +238,8 @@ uint8_t TMC2130::getVersion()
   InputPinStatus input_pin_status;
   input_pin_status.uint32 = data;
 
+  std::cout << "TMC2130 - Version: " << std::bitset<8>(input_pin_status.fields.version)<< std::endl;
+
   return input_pin_status.fields.version;
 }
 
@@ -637,7 +639,7 @@ uint32_t TMC2130::write(uint8_t address,
   mosi_datagram.fields.rw = RW_WRITE;
   mosi_datagram.fields.address = address;
   mosi_datagram.fields.data = data;
-  std::cout << "TMC2130 - Sending  Datagram: " << std::bitset<32>(mosi_datagram.uint64) << std::endl << std::endl;
+  // std::cout << "TMC2130 - Sending  Datagram: " << std::bitset<32>(mosi_datagram.uint64) << std::endl << std::endl;
 
   return sendReceivePrevious(mosi_datagram);
 }
@@ -650,12 +652,13 @@ uint32_t TMC2130::read(uint8_t address)
   mosi_datagram.fields.address = address;
 
   // must read twice to get value at address
-  std::cout << "TMC2130 - Sending  Datagram: " << std::bitset<32>(mosi_datagram.uint64) << std::endl;
-  std::cout << "TMC2130 - " << std::bitset<1>(mosi_datagram.fields.rw) << std::endl;
-  std::cout << "TMC2130 - " << std::bitset<7>(mosi_datagram.fields.address) << std::endl;
-  sendReceivePrevious(mosi_datagram);
+  // std::cout << "TMC2130 - Sending  Datagram : " << std::bitset<40>(mosi_datagram.uint64) << std::endl;
+  // std::cout << "TMC2130 - Address           : " << std::bitset<7>(mosi_datagram.fields.address) << std::endl;
+  // std::cout << "TMC2130 - RW                : " << std::bitset<1>(mosi_datagram.fields.rw) << std::endl;
+  // std::cout << "TMC2130 - Data              : " << std::bitset<32>(mosi_datagram.fields.data) << std::endl;
+  //  sendReceivePrevious(mosi_datagram);
   uint32_t data = sendReceivePrevious(mosi_datagram);
-  std::cout << "TMC2130 - Received  Datagram: " << std::bitset<32>(mosi_datagram.uint64)<< std::endl;
+  data = sendReceivePrevious(mosi_datagram);
 
   return data;
 }
@@ -665,7 +668,9 @@ uint32_t TMC2130::sendReceivePrevious(TMC2130::MosiDatagram & mosi_datagram)
   MisoDatagram miso_datagram;
   miso_datagram.uint64 = 0;
 
-  spiBeginTransaction();
+  // std::cout << "TMC2130 - Sending  Datagram : " << std::bitset<40>(mosi_datagram.uint64) << std::endl;
+
+  digitalWrite(chip_select_pin_, LOW);
   for (int i=(DATAGRAM_SIZE - 1); i>=0; --i)
   {
     // char byte_write[1];
@@ -676,18 +681,18 @@ uint32_t TMC2130::sendReceivePrevious(TMC2130::MosiDatagram & mosi_datagram)
 
     unsigned char byte_transfer[1];
     byte_transfer[0] = (mosi_datagram.uint64 >> (8*i)) & 0xff;
-    // std::cout << std::hex << byte_transfer[0] << std::endl;
     // std::cout << "TMC2130 - Sent  Byte: " << std::bitset<8>(byte_transfer[0]) << std::endl;
     wiringPiSPIDataRW(spi_channel, byte_transfer, 1);
-    // std::cout << byte_transfer[0] << std::endl;
     // std::cout << "TMC2130 - Received  Byte: " << std::bitset<8>(byte_transfer[0]) << std::endl;
 // 
     miso_datagram.uint64 |= byte_transfer[0] << (8*i);
   }
 
-  spiEndTransaction();
+  digitalWrite(chip_select_pin_, HIGH);
 
   spi_status_ = miso_datagram.fields.spi_status;
+
+  // std::cout << "TMC2130 - Received  Datagram: " << std::bitset<40>(miso_datagram.uint64)<< std::endl;
 
   return miso_datagram.fields.data;
 }

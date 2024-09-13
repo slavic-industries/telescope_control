@@ -78,7 +78,17 @@ int main() {
   clock_generator.enableOutputs(true);
   std::cout << "SI5351 setup and configuration complete!" << std::endl;
 
-
+ // if(tmc429.setup(TMC429_CS_PIN, SPI_CHANNEL) != 0)
+ // {
+ //    std::cerr << "Steper controller initialization failed." << std::endl;
+ //    return -1;
+ // }
+ // std::cout << "TMC429 communicating: " << tmc429.communicating() << tmc429.communicating() << std::endl;
+ // std::cout << "TMC429 version: " << tmc429.getVersion() << std::endl;
+ // if(!tmc429.communicating()){
+ //   std::cerr << "TMC429 controller not communicating." << std::endl;
+ //   return -1;
+ // }
 
   std::cout << "***********"<< std::endl;
   std::cout << "TMC2130 Setup " << std::endl;
@@ -88,21 +98,22 @@ int main() {
     std::cerr << "Stepper driver initialization failed." << std::endl;
     return -1;
   }
-  // usleep(100000); 
+  // usleep(100000) 
   if(!tmc2130.communicating())
   {
     std::cout << "TMC2130 not communicating." << std::endl;
     return -1;
   }
-  // usleep(100000); 
-  
+  // usleep(100000);
+
   tmc2130.enableStealthChop();
   // tmc2130.enableAutomaticCurrentScaling();
-  usleep(100000); 
+  usleep(100000);
   tmc2130.setHoldCurrent(10);
   tmc2130.setRunCurrent(10);
 
-  
+  std::cout << "TMC2130 Setup Complete" << std::endl;
+
   std::cout << "***********"<< std::endl;
   std::cout << "TMC429 Setup " << std::endl;
   if(tmc429.setup(TMC429_CS_PIN, SPI_CHANNEL) != 0)
