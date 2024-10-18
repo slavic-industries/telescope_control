@@ -14,7 +14,7 @@ public:
             RCLCPP_ERROR(this->get_logger(), "No SI5351 detected. Check your wiring or I2C ADDR!");
             rclcpp::shutdown();
         }
-        this->set_output_to_16Mhz(this->clock_generator);
+        this->set_output_to_4Mhz(this->clock_generator);
 
     }
 
@@ -37,6 +37,24 @@ private:
         generator.setupMultisynth(2, SI5351_PLL_A, 50, 0, 1);// 800 MHz / (50 + 0/1) = 16 MHz
         generator.enableOutputs(true);
         RCLCPP_INFO(this->get_logger(), "SI5351 output 16Mhz complete!");
+    }
+
+    void set_output_to_8Mhz(SI5351 generator)
+    {
+        generator.enableOutputs(false);
+        generator.setupPLLInt(SI5351_PLL_A, 32);// Setup PLLA (32 * 25 MHz = 800 MHz)
+        generator.setupMultisynth(2, SI5351_PLL_A, 100, 0, 1);// 800 MHz / (100 + 0/1) = 8 MHz
+        generator.enableOutputs(true);
+        RCLCPP_INFO(this->get_logger(), "SI5351 output 8Mhz complete!");
+    }
+
+    void set_output_to_4Mhz(SI5351 generator)
+    {
+        generator.enableOutputs(false);
+        generator.setupPLLInt(SI5351_PLL_A, 32);// Setup PLLA (32 * 25 MHz = 800 MHz)
+        generator.setupMultisynth(2, SI5351_PLL_A, 200, 0, 1);// 800 MHz / (200 + 0/1) = 4 MHz
+        generator.enableOutputs(true);
+        RCLCPP_INFO(this->get_logger(), "SI5351 output 4Mhz complete!");
     }
 
     void set_output_to_187khz(SI5351 generator)
