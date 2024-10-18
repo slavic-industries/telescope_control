@@ -14,12 +14,13 @@ find_package(telescope_interfaces)
 include_directories(
   include
   /usr/include/libnova
+  /usr/include/novas
 )
 
 
 add_executable(target_body_node src/target_body_node.cpp)
 ament_target_dependencies(target_body_node rclcpp std_msgs telescope_interfaces)
-target_link_libraries(target_body_node nova)
+target_link_libraries(target_body_node novas nova)
 
 install(TARGETS
         target_body_node

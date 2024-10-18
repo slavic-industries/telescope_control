@@ -2,18 +2,21 @@
 #include <libnova/julian_day.h>
 #include <libnova/ln_types.h>
 #include <libnova/solar.h>
+// #include <libnova/ln_star.h>
+// #include <libnova/ln_catalog.h>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
 #include "telescope_interfaces/srv/set_target.hpp"
 #include "telescope_interfaces/srv/change_frequency.hpp"
 #include "telescope_interfaces/msg/target_position.hpp"
+#include "novas.h"
 
 class TargetBodyNode : public rclcpp::Node {
 public:
     TargetBodyNode() : Node("target_body_node"), timer_interval_(1) {
 
         // Declare and initialize the parameter
-        this->declare_parameter("target_body", rclcpp::PARAMETER_STRING);
+        // this->declare_parameter("target_body", rclcpp::PARAMETER_STRING);
 
 
         publisher_ = this->create_publisher<std_msgs::msg::String>("target_body", 10);
@@ -29,6 +32,15 @@ public:
           "change_frequency", std::bind(&TargetBodyNode::change_frequency, this, std::placeholders::_1, std::placeholders::_2));
     }
 
+    std::string getTargetName()
+    {
+        return this->target_body_;
+    }
+
+    void setTargetName(std::string name)
+    {
+        this->target_body_ = name;
+    }
     
     
 
@@ -59,7 +71,11 @@ private:
     auto message = telescope_interfaces::msg::TargetPosition();
     message.ra = pos.ra;
     message.dec = pos.dec;
-    RCLCPP_INFO(this->get_logger(), "RA: %f\tDEC: %f", pos.ra, pos.dec);
+    
+    int ra = 0.0;
+    int dec = 0.0;
+
+    RCLCPP_INFO(this->get_logger(), "RA: %d\tDEC: %d", ra, dec);
     // RCLCPP_INFO(this->get_logger(), "%d-%d-%d_%d:%d:%f", date.years, date.months, date.days, date.hours, date.minutes, date.seconds);
     current_position_publisher_->publish(message);
   }
@@ -67,36 +83,30 @@ private:
     void set_target(const std::shared_ptr<telescope_interfaces::srv::SetTarget::Request> request,
         std::shared_ptr<telescope_interfaces::srv::SetTarget::Response> response) {
         RCLCPP_INFO(this->get_logger(), "Got: '%s'", request->target_name.c_str());
-        this->set_parameter(rclcpp::Parameter("target_body", request->target_name));
+        // this->set_parameter(rclcpp::Parameter("target_body", request->target_name));
+        this->setTargetName(request->target_name);
 
         std::string new_target_name;
-        this->get_parameter("target_body", new_target_name);
+        // this->get_parameter("target_body", new_target_name);
+        new_target_name = this->getTargetName();
         response->success = true;
         response->message = "Target body changed to: " + new_target_name;
         RCLCPP_INFO(this->get_logger(), "Target body changed to: '%s'", new_target_name.c_str());
+
+        // if (ln_get_star_by_name(new_target_name.c_str(), &this->star_data) == 0) 
+        // {
+        //     // Calculate the equatorial coordinates
+        //     ln_get_equ_star(&this->star_data, &this->equ_posn);
+
+        //     // Display the coordinates
+        //     std::cout << "Right Ascension: " << this->equ_posn.ra << " hours" << std::endl;
+        //     std::cout << "Declination: " << this->equ_posn.dec << " degrees" << std::endl;
+        // } 
+        // else 
+        // {
+        //     std::cerr << "Star not found in the catalog." << std::endl;
+        // }
     }
-
-    // std::string get_coordinates() {
-    //     // // Convert ROS 2 time to struct ln_date
-    //     std::time_t time = this->now().seconds();
-    //     std::tm *ptm = std::gmtime(&time);
-
-    //     struct ln_date date;
-    //     date.years = ptm->tm_year + 1900;
-    //     date.months = ptm->tm_mon + 1;
-    //     date.days = ptm->tm_mday;
-    //     date.hours = ptm->tm_hour;
-    //     date.minutes = ptm->tm_min;
-    //     date.seconds = ptm->tm_sec;
-
-        
-
-    //     // Create a string with RA and Dec
-    //     std::ostringstream oss;
-    //     oss << "Right Ascension (RA): " << pos.ra << " hours, "
-    //         << "Declination (Dec): " << pos.dec << " degrees";
-    //     return oss.str();
-    // }
 
     void change_frequency(const std::shared_ptr<telescope_interfaces::srv::ChangeFrequency::Request> request,
                         std::shared_ptr<telescope_interfaces::srv::ChangeFrequency::Response> response)
@@ -121,6 +131,9 @@ private:
     rclcpp::TimerBase::SharedPtr timer_;
     std::chrono::duration<double> timer_interval_;
     std::string target_body_;
+    // struct ln_eqi_posn equ_posn;
+    // struct ln _star star_data;
+
 };
 
 
