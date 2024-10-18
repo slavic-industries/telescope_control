@@ -8,6 +8,8 @@
 
 #define MOTOR_INDEX 0
 
+#define TMC429_CONNECTION_ATTEMPTS 5
+
 class DriveNode : public rclcpp::Node
 {
 public:
@@ -44,17 +46,34 @@ public:
 
         RCLCPP_INFO(this->get_logger(), "***********");
         RCLCPP_INFO(this->get_logger(), "TMC429 Setup ");
+        
 
         if(tmc429.setup(TMC429_CS_PIN, SPI_CHANNEL) != 0)
         {
             throw std::runtime_error("TMC429 driver controller initialization failed.");
         }
+        
 
-        if(!tmc429.communicating())
+        int i;
+        for(i = 0; i<TMC429_CONNECTION_ATTEMPTS; i++)
+        {
+            RCLCPP_INFO(this->get_logger(), "TMC429 - Connection attempt no: %d", i+1);
+            if(tmc429.communicating())
+            {
+                break;
+            }
+        }
+        if(i >= TMC429_CONNECTION_ATTEMPTS)
         {
             throw std::runtime_error("TMC429 not communicating");
         }
 
+
+        // if(!tmc429.communicating())
+        // {
+        //     throw std::runtime_error("TMC429 not communicating");
+        // }
+        std::cout << "Communicationg done" << std::endl;
         tmc429.setStepDirOutput();
 
         tmc429.setPDiv(MOTOR_INDEX, 4);

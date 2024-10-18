@@ -12,6 +12,7 @@
 #include <wiringPi.h>
 #include <wiringPiSPI.h>
 #include <iostream>
+#include <unistd.h> 
 
 
 class TMC2130

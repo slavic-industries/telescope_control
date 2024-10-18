@@ -505,57 +505,9 @@ void TMC2130::setMicrostepsPerStepPowerOfTwo(uint8_t exponent)
   setChopperConfig();
 }
 
-uint32_t TMC2130::sendReceivePrevious(TMC2130::MosiDatagram & mosi_datagram)
-{
-  MisoDatagram miso_datagram;
-  miso_datagram.uint64 = 0;
 
-  spiBeginTransaction();
-  for (int i=(DATAGRAM_SIZE - 1); i>=0; --i)
-  {
-    char byte_write[1];
-    char byte_read[1];
-    byte_write[0] = (mosi_datagram.uint64 >> (8*i)) & 0xff;
 
-    uint8_t spi_status_ = spiXfer(spi_handle, byte_write, byte_read, 1);
 
-    std::cout << "Byte received: " << std::bitset<8>(byte_read[0]) << std::endl;
-
-    miso_datagram.uint64 |= byte_read[0] << (8*i);
-  }
-
-  // std::cout << std::endl;
-  spiEndTransaction();
-
-  spi_status_ = miso_datagram.fields.spi_status;
-
-  return miso_datagram.fields.data;
-}
-
-uint32_t TMC2130::write(uint8_t address,
-  uint32_t data)
-{
-  MosiDatagram mosi_datagram;
-  mosi_datagram.uint64 = 0;
-  mosi_datagram.fields.rw = RW_WRITE;
-  mosi_datagram.fields.address = address;
-  mosi_datagram.fields.data = data;
-
-  return sendReceivePrevious(mosi_datagram);
-}
-
-uint32_t TMC2130::read(uint8_t address)
-{
-  MosiDatagram mosi_datagram;
-  mosi_datagram.uint64 = 0;
-  mosi_datagram.fields.rw = RW_READ;
-  mosi_datagram.fields.address = address;
-
-  // must read twice to get value at address
-  sendReceivePrevious(mosi_datagram);
-  uint32_t data = sendReceivePrevious(mosi_datagram);
-  return data;
-}
 
 uint8_t TMC2130::percentToCurrentSetting(uint8_t percent)
 {
@@ -660,4 +612,59 @@ T TMC2130::constrain(T value, T min_val, T max_val) {
 template <typename T>
 T TMC2130::map(T value, T fromLow, T fromHigh, T toLow, T toHigh) {
     return (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) + toLow;
+}
+
+uint32_t TMC2130::write(uint8_t address,
+  uint32_t data)
+{
+  MosiDatagram mosi_datagram;
+  mosi_datagram.uint64 = 0;
+  mosi_datagram.fields.rw = RW_WRITE;
+  mosi_datagram.fields.address = address;
+  mosi_datagram.fields.data = data;
+
+  return sendReceivePrevious(mosi_datagram);
+}
+
+uint32_t TMC2130::read(uint8_t address)
+{
+  MosiDatagram mosi_datagram;
+  mosi_datagram.uint64 = 0;
+  mosi_datagram.fields.rw = RW_READ;
+  mosi_datagram.fields.address = address;
+
+  // must read twice to get value at address
+  sendReceivePrevious(mosi_datagram);
+  uint32_t data = sendReceivePrevious(mosi_datagram);
+  // data = sendReceivePrevious(mosi_datagram);
+  return data;
+}
+
+
+
+uint32_t TMC2130::sendReceivePrevious(TMC2130::MosiDatagram & mosi_datagram)
+{
+  MisoDatagram miso_datagram;
+  miso_datagram.uint64 = 0;
+
+  spiBeginTransaction();
+  for (int i=(DATAGRAM_SIZE - 1); i>=0; --i)
+  {
+    char byte_write[1];
+    char byte_read[1];
+    byte_write[0] = (mosi_datagram.uint64 >> (8*i)) & 0xff;
+
+    uint8_t spi_status_ = spiXfer(spi_handle, byte_write, byte_read, 1);
+
+    std::cout << "Byte received: " << std::bitset<8>(byte_read[0]) << std::endl;
+
+    miso_datagram.uint64 |= byte_read[0] << (8*i);
+  }
+
+  // std::cout << std::endl;
+  spiEndTransaction();
+
+  spi_status_ = miso_datagram.fields.spi_status;
+
+  return miso_datagram.fields.data;
 }

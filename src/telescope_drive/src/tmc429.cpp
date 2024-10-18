@@ -43,7 +43,7 @@ uint8_t TMC429::setup(size_t chip_select_pin, uint8_t spi_device)
   digitalWrite(this->chip_select_pin_, HIGH);
 
   // spi_handle = spiOpen(spi_channel, SPI_CLOCK, 0x03);
-  spi_handle = wiringPiSPISetupMode(this->spi_channel, 500000, 3);
+  spi_handle = wiringPiSPISetupMode(this->spi_channel, 1000000, 3);
   if (spi_handle == -1) {
     // std::cout << "Failed to initialize SPI!" << std::endl;
     return 2;
@@ -240,7 +240,12 @@ void TMC429::printSettingsMotor0()
 
 bool TMC429::communicating()
 {
-  return (getVersion() == VERSION);
+  uint32_t getVer = getVersion();
+  std::cout << "Communicating" << std::endl;
+  std::cout << "Version   : " << getVer << std::endl;
+  std::cout << "MY version: " << VERSION << std::endl;
+
+  return (getVer == VERSION);
 }
 
 uint32_t TMC429::getVersion()
@@ -1343,11 +1348,8 @@ uint32_t TMC429::readRegister(uint8_t smda,
   mosi_datagram.smda = smda;
   mosi_datagram.rw = RW_READ;
   mosi_datagram.data = 0;
-  // std::cout << "TMC429 - Sending  Datagram: " << std::bitset<32>(mosi_datagram.bytes) << std::endl;
   MisoDatagram miso_datagram = writeRead(mosi_datagram);
-  miso_datagram = writeRead(mosi_datagram);
-  // std::cout << "TMC429 - Received Datagram: " << std::bitset<32>(miso_datagram.bytes) << std::endl << std::endl;
-  
+  // miso_datagram = writeRead(mosi_datagram);
   return miso_datagram.data;
 }
 
@@ -1361,7 +1363,6 @@ void TMC429::writeRegister(uint8_t smda,
   mosi_datagram.smda = smda;
   mosi_datagram.rw = RW_WRITE;
   mosi_datagram.data = data;
-  // std::cout << "TMC429 - Sending  Datagram: " << std::bitset<32>(mosi_datagram.bytes) << std::endl << std::endl;
   writeRead(mosi_datagram);
 }
 
@@ -1369,6 +1370,7 @@ TMC429::MisoDatagram TMC429::writeRead(MosiDatagram mosi_datagram)
 {
   MisoDatagram miso_datagram;
   miso_datagram.bytes = 0x0;
+  std::cout << "TMC429 - Sending  Datagram  : " << std::bitset<32>(mosi_datagram.bytes) << std::endl;
   digitalWrite(chip_select_pin_, LOW);
   for (int i=(DATAGRAM_SIZE - 1); i>=0; --i)
   {   
@@ -1379,5 +1381,6 @@ TMC429::MisoDatagram TMC429::writeRead(MosiDatagram mosi_datagram)
   }
   digitalWrite(chip_select_pin_, HIGH);
   status_ = miso_datagram.status;
+  std::cout << "TMC429 - Received  Datagram : " << std::bitset<32>(miso_datagram.bytes) << std::endl << std::endl;
   return miso_datagram;
 }

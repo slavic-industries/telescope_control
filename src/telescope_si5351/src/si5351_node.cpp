@@ -8,21 +8,27 @@ public:
     SI5351Node() : Node("si5351_node")
     {
 
-        SI5351 clock_generator = SI5351(host_i2c_device, si5351_addr);
-
-        if (clock_generator.begin())
+        if (this->clock_generator.begin())
         {
             // std::cout << "No SI5351 detected. Check your wiring or I2C ADDR!" << std::endl;
             RCLCPP_ERROR(this->get_logger(), "No SI5351 detected. Check your wiring or I2C ADDR!");
             rclcpp::shutdown();
         }
-        this->set_output_to_16Mhz(clock_generator);
+        this->set_output_to_16Mhz(this->clock_generator);
 
+    }
+
+    ~SI5351Node()
+    {
+        this->clock_generator.enableOutputs(false);
+        RCLCPP_INFO(this->get_logger(), "SI5351 destructor.");
     }
 
 private:
     const char* host_i2c_device = "/dev/i2c-1";
     uint8_t si5351_addr = 0x60;
+
+    SI5351 clock_generator = SI5351(host_i2c_device, si5351_addr);
 
     void set_output_to_16Mhz(SI5351 generator)
     {

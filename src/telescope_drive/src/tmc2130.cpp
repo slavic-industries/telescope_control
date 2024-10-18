@@ -41,7 +41,7 @@ uint8_t TMC2130::setup(size_t chip_select_pin, uint8_t spi_device)
   digitalWrite(this->chip_select_pin_, HIGH);
 
   //   spi_handle = spiOpen(spi_channel, SPI_CLOCK, 0);
-  spi_handle = wiringPiSPISetupMode(this->spi_channel, 1000000, 3);
+  spi_handle = wiringPiSPISetupMode(this->spi_channel, 500000, 3);
   if (spi_handle == -1) {
     // std::cout << "Failed to initialize SPI!" << std::endl;
     return 2;
@@ -668,31 +668,49 @@ uint32_t TMC2130::sendReceivePrevious(TMC2130::MosiDatagram & mosi_datagram)
   MisoDatagram miso_datagram;
   miso_datagram.uint64 = 0;
 
-  // std::cout << "TMC2130 - Sending  Datagram : " << std::bitset<40>(mosi_datagram.uint64) << std::endl;
+  std::cout << "TMC2130 - Sending  Datagram : " << std::bitset<40>(mosi_datagram.uint64) << std::endl;
 
   digitalWrite(chip_select_pin_, LOW);
-  for (int i=(DATAGRAM_SIZE - 1); i>=0; --i)
-  {
-    // char byte_write[1];
-    // char byte_read[1];
-    // byte_write[0] = (mosi_datagram.uint64 >> (8*i)) & 0xff;
-    // uint8_t spi_status_ = spiXfer(spi_handle, byte_write, byte_read, 1);
-    // miso_datagram.uint64 |= byte_read[0] << (8*i);
+  usleep(1);
+  // for (int i=(DATAGRAM_SIZE - 1); i>=0; --i)
+//   {
+//     unsigned char byte_transfer[1];
+//     byte_transfer[0] = (mosi_datagram.uint64 >> (8*i)) & 0xff;
+//     // std::cout << "TMC2130 - Sent  Byte: " << std::bitset<8>(byte_transfer[0]) << std::endl;
+//     wiringPiSPIDataRW(spi_channel, byte_transfer, 1);
+//     // std::cout << "TMC2130 - Received  Byte: " << std::bitset<8>(byte_transfer[0]) << std::endl;
+// // 
+//     miso_datagram.uint64 |= byte_transfer[0] << (8*i);
+//   }
 
-    unsigned char byte_transfer[1];
-    byte_transfer[0] = (mosi_datagram.uint64 >> (8*i)) & 0xff;
-    // std::cout << "TMC2130 - Sent  Byte: " << std::bitset<8>(byte_transfer[0]) << std::endl;
-    wiringPiSPIDataRW(spi_channel, byte_transfer, 1);
-    // std::cout << "TMC2130 - Received  Byte: " << std::bitset<8>(byte_transfer[0]) << std::endl;
-// 
-    miso_datagram.uint64 |= byte_transfer[0] << (8*i);
-  }
+  unsigned char byte_transfer[5];
+  byte_transfer[0] = (mosi_datagram.uint64 >> (8*4)) & 0xff;
+  byte_transfer[1] = (mosi_datagram.uint64 >> (8*3)) & 0xff;
+  byte_transfer[2] = (mosi_datagram.uint64 >> (8*2)) & 0xff;
+  byte_transfer[3] = (mosi_datagram.uint64 >> (8*1)) & 0xff;
+  byte_transfer[4] = (mosi_datagram.uint64 ) & 0xff;
 
+  std::cout << "TMC2130 - Sent Byte: " << std::bitset<8>(byte_transfer[0])<< std::endl;
+  std::cout << "TMC2130 - Sent Byte: " << std::bitset<8>(byte_transfer[1])<< std::endl;
+  std::cout << "TMC2130 - Sent Byte: " << std::bitset<8>(byte_transfer[2])<< std::endl;
+  std::cout << "TMC2130 - Sent Byte: " << std::bitset<8>(byte_transfer[3])<< std::endl;
+  std::cout << "TMC2130 - Sent Byte: " << std::bitset<8>(byte_transfer[4])<< std::endl;
+
+  wiringPiSPIDataRW(spi_channel, byte_transfer, 5);
+
+  miso_datagram.uint64 |= byte_transfer[0] << (8*4);
+  miso_datagram.uint64 |= byte_transfer[1] << (8*3);
+  miso_datagram.uint64 |= byte_transfer[2] << (8*2);
+  miso_datagram.uint64 |= byte_transfer[3] << (8*1);
+  miso_datagram.uint64 |= byte_transfer[4] << (8*0);
+
+
+  usleep(1);
   digitalWrite(chip_select_pin_, HIGH);
 
   spi_status_ = miso_datagram.fields.spi_status;
 
-  // std::cout << "TMC2130 - Received  Datagram: " << std::bitset<40>(miso_datagram.uint64)<< std::endl;
+  std::cout << "TMC2130 - Received  Datagram: " << std::bitset<40>(miso_datagram.uint64)<< std::endl;
 
   return miso_datagram.fields.data;
 }
