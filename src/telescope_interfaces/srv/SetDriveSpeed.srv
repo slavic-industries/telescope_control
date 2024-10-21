@@ -1,0 +1,4 @@
+# Set speed of drive node
+int32 drive_speed # 0-Zer0, 1-Siderial, 2-GoTo
+---
+bool success

@@ -17,6 +17,7 @@ rosidl_generate_interfaces(
   "srv/SetLedMode.srv"
   "srv/SetObserver.srv"
   "srv/SetTarget.srv"
+  "srv/SetDriveSpeed.srv"
   "msg/TargetPosition.msg"
   "msg/TargetCoordinates.msg"
 )

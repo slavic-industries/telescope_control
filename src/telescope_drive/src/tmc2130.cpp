@@ -13,10 +13,8 @@ TMC2130::~TMC2130()
 {
   if(initialized)
   {
-    // spiClose(spi_handle);
     initialized = false;
   }
-//   std::cout << "TMC2130 Object destroyed." <<std::endl;
 }
 uint8_t TMC2130::setup(size_t chip_select_pin, uint8_t spi_device)
 {
@@ -24,29 +22,18 @@ uint8_t TMC2130::setup(size_t chip_select_pin, uint8_t spi_device)
   this->enable_pin_ = -1;
   this->spi_channel = spi_device;
 
-//   if (gpioInitialise() < 0) {
-//     std::cerr << "pigpio initialization failed" << std::endl;
-//     return 1;
-//   }
-
-//   gpioSetMode(chip_select_pin_,PI_OUTPUT);
-//   gpioWrite(chip_select_pin_,PI_HIGH);
-
   if (wiringPiSetup() != 0) {
-    // std::cerr << "pigpio initialization failed" << std::endl;
     return 1;
   }
 
   pinMode(this->chip_select_pin_, OUTPUT);
   digitalWrite(this->chip_select_pin_, HIGH);
 
-  //   spi_handle = spiOpen(spi_channel, SPI_CLOCK, 0);
   spi_handle = wiringPiSPISetupMode(this->spi_channel, 500000, 3);
   if (spi_handle == -1) {
-    // std::cout << "Failed to initialize SPI!" << std::endl;
     return 2;
   }
-  std::cout << "TMC2130 SPI Handle (setup): " << std::hex << spi_handle << std::endl;
+  // std::cout << "TMC2130 SPI Handle (setup): " << std::hex << spi_handle << std::endl;
 
 
   global_config_.uint32 = 0;
@@ -93,10 +80,6 @@ uint8_t TMC2130::setup(size_t chip_select_pin, uint8_t spi_device)
   // write(ADDRESS_GCONF, gc.uint32);
   // rd = read(ADDRESS_GCONF);
   // std::cout << "General con mo read: " << std::bitset<32>(rd) << std::endl;
-
-  
-
-
 
   initialized = true;
   return 0;
@@ -238,7 +221,7 @@ uint8_t TMC2130::getVersion()
   InputPinStatus input_pin_status;
   input_pin_status.uint32 = data;
 
-  std::cout << "TMC2130 - Version: " << std::bitset<8>(input_pin_status.fields.version)<< std::endl;
+  // std::cout << "TMC2130 - Version: " << std::bitset<8>(input_pin_status.fields.version)<< std::endl;
 
   return input_pin_status.fields.version;
 }
@@ -262,10 +245,15 @@ void TMC2130::reset_driver()
 
 void TMC2130::setup_driver()
 {
-  write(ADDRESS_GCONF, global_config_.uint32);
-  write(ADDRESS_IHOLD_IRUN, driver_current_.uint32);
-  write(ADDRESS_CHOPCONF, chopper_config_.uint32);
-  write(ADDRESS_PWMCONF, pwm_config_.uint32);
+  setGlobalConfig();
+  setDriverCurrent();
+  setChopperConfig();
+  setPwmConfig();
+
+  setMicrostepsPerStep(32);
+  enableStealthChop();
+  // tmc2130.enableAutomaticCurrentScaling();
+  setPwmThreshold(TPWMTHRS_DEFAULT);
 }
 
 
@@ -668,7 +656,7 @@ uint32_t TMC2130::sendReceivePrevious(TMC2130::MosiDatagram & mosi_datagram)
   MisoDatagram miso_datagram;
   miso_datagram.uint64 = 0;
 
-  std::cout << "TMC2130 - Sending  Datagram : " << std::bitset<40>(mosi_datagram.uint64) << std::endl;
+  // std::cout << "TMC2130 - Sending  Datagram : " << std::bitset<40>(mosi_datagram.uint64) << std::endl;
 
   digitalWrite(chip_select_pin_, LOW);
   usleep(1);
@@ -690,11 +678,11 @@ uint32_t TMC2130::sendReceivePrevious(TMC2130::MosiDatagram & mosi_datagram)
   byte_transfer[3] = (mosi_datagram.uint64 >> (8*1)) & 0xff;
   byte_transfer[4] = (mosi_datagram.uint64 ) & 0xff;
 
-  std::cout << "TMC2130 - Sent Byte: " << std::bitset<8>(byte_transfer[0])<< std::endl;
-  std::cout << "TMC2130 - Sent Byte: " << std::bitset<8>(byte_transfer[1])<< std::endl;
-  std::cout << "TMC2130 - Sent Byte: " << std::bitset<8>(byte_transfer[2])<< std::endl;
-  std::cout << "TMC2130 - Sent Byte: " << std::bitset<8>(byte_transfer[3])<< std::endl;
-  std::cout << "TMC2130 - Sent Byte: " << std::bitset<8>(byte_transfer[4])<< std::endl;
+  // std::cout << "TMC2130 - Sent Byte: " << std::bitset<8>(byte_transfer[0])<< std::endl;
+  // std::cout << "TMC2130 - Sent Byte: " << std::bitset<8>(byte_transfer[1])<< std::endl;
+  // std::cout << "TMC2130 - Sent Byte: " << std::bitset<8>(byte_transfer[2])<< std::endl;
+  // std::cout << "TMC2130 - Sent Byte: " << std::bitset<8>(byte_transfer[3])<< std::endl;
+  // std::cout << "TMC2130 - Sent Byte: " << std::bitset<8>(byte_transfer[4])<< std::endl;
 
   wiringPiSPIDataRW(spi_channel, byte_transfer, 5);
 
@@ -710,7 +698,7 @@ uint32_t TMC2130::sendReceivePrevious(TMC2130::MosiDatagram & mosi_datagram)
 
   spi_status_ = miso_datagram.fields.spi_status;
 
-  std::cout << "TMC2130 - Received  Datagram: " << std::bitset<40>(miso_datagram.uint64)<< std::endl;
+  // std::cout << "TMC2130 - Received  Datagram: " << std::bitset<40>(miso_datagram.uint64)<< std::endl;
 
   return miso_datagram.fields.data;
 }

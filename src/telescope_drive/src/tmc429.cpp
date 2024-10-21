@@ -11,13 +11,12 @@
 
 TMC429::TMC429()
 {
-    // wiringPiSetup();
-  // std::cerr << "TMC429 object created" << std::endl;
+
 }
 
 TMC429::~TMC429()
 { 
-  // stopAll();
+  stopAll();
   if(initialized)
   {
     // wiringPiSPIClose(this->spi_channel);
@@ -30,25 +29,19 @@ uint8_t TMC429::setup(size_t chip_select_pin, uint8_t spi_device)
 {
   this->chip_select_pin_ = chip_select_pin;
   this->spi_channel = spi_device;
-  // spi_channel = 0;
-
-  std::cout << "spi_channel = " << int(this->spi_channel) << std::endl;
 
   if (wiringPiSetup() != 0) {
-    // std::cerr << "pigpio initialization failed" << std::endl;
     return 1;
   }
 
   pinMode(this->chip_select_pin_, OUTPUT);
   digitalWrite(this->chip_select_pin_, HIGH);
 
-  // spi_handle = spiOpen(spi_channel, SPI_CLOCK, 0x03);
   spi_handle = wiringPiSPISetupMode(this->spi_channel, 1000000, 3);
   if (spi_handle == -1) {
-    // std::cout << "Failed to initialize SPI!" << std::endl;
     return 2;
   }
-  std::cout << "TMC429 SPI Handle (setup): " << std::hex << spi_handle << std::endl;
+  // std::cout << "TMC429 SPI Handle (setup): " << std::hex << spi_handle << std::endl;
 
   for (uint8_t motor=0; motor<MOTOR_COUNT; ++motor)
   {
@@ -64,7 +57,6 @@ uint8_t TMC429::setup(size_t chip_select_pin, uint8_t spi_device)
 
   // initialize();
 
-  // printSettingsMotor0();
 
   initialized = true;
 
@@ -155,23 +147,23 @@ void TMC429::printSettingsMotor0()
 
   std::cout << "Motor index:\t" << std::dec << motor << std::endl;
   std::cout << "\tX_TARGET:\t" << std::dec << x_target << std::endl;
-  std::cout << "\tX_TARGET:\t" << std::bitset<32>(x_target) << std::endl;
+  // std::cout << "\tX_TARGET:\t" << std::bitset<32>(x_target) << std::endl;
   std::cout << "\tX_ACTUAL:\t" << std::dec << x_actual << std::endl;
-  std::cout << "\tX_ACTUAL:\t" << std::bitset<32>(x_actual) << std::endl;
+  // std::cout << "\tX_ACTUAL:\t" << std::bitset<32>(x_actual) << std::endl;
   std::cout << "\tV_MIN:\t\t" << std::dec << v_min << std::endl;
-  std::cout << "\tV_MIN:\t\t" << std::bitset<16>(v_min) << std::endl;
+  // std::cout << "\tV_MIN:\t\t" << std::bitset<16>(v_min) << std::endl;
   std::cout << "\tV_MAX:\t\t" << std::dec << v_max << std::endl;
-  std::cout << "\tV_MAX:\t\t" << std::bitset<16>(v_max) << std::endl;
+  // std::cout << "\tV_MAX:\t\t" << std::bitset<16>(v_max) << std::endl;
   std::cout << "\tV_TARGET:\t" << std::dec << v_target << std::endl;
-  std::cout << "\tV_TARGET:\t" << std::bitset<16>(v_target) << std::endl;
+  // std::cout << "\tV_TARGET:\t" << std::bitset<16>(v_target) << std::endl;
   std::cout << "\tV_ACTUAL:\t" << std::dec << v_actual << std::endl;
   std::cout << "\tA_MAX:\t\t" << std::dec << a_max << std::endl;
-  std::cout << "\tA_MAX:\t\t" << std::bitset<16>(a_max) << std::endl;
+  // std::cout << "\tA_MAX:\t\t" << std::bitset<16>(a_max) << std::endl;
   std::cout << "\tA_ACTUAL:\t" << std::dec << a_actual << std::endl;
   std::cout << "\tA_THREASH:\t" << std::dec << a_threash << std::endl;
   std::cout << "\tDX Ref Tol:\t" << std::dec << dx_ref_tol << std::endl;
   std::cout << "\tX_Latch:\t" << std::dec << x_latched << std::endl;
-  std::cout << "\tuStep Count:\t" << std::bitset<8>(ustep_count_429) << std::endl;
+  // std::cout << "\tuStep Count:\t" << std::bitset<8>(ustep_count_429) << std::endl;
   
   std::cout << "Datagrams:"<< std::endl;
   // std::cout << "\tStatus:\t" << std::endl;
@@ -185,9 +177,9 @@ void TMC429::printSettingsMotor0()
   // std::cout << "\t  interrupt\t\t" << std::bitset<1>(status_.interrupt) << std::endl;
 
   std::cout << "\tProp Factor:\t" << std::endl; // std::bitset<32>(propfactor_.bytes) << std::endl;
-  std::cout << "\t  pdiv\t\t" << std::bitset<4>(propfactor_.pdiv) << std::endl;
+  // std::cout << "\t  pdiv\t\t" << std::bitset<4>(propfactor_.pdiv) << std::endl;
   std::cout << "\t  pdiv\t\t" << std::dec << propfactor_.pdiv << std::endl;
-  std::cout << "\t  pmul\t\t" << std::bitset<8>(propfactor_.pmul) << std::endl;
+  // std::cout << "\t  pmul\t\t" << std::bitset<8>(propfactor_.pmul) << std::endl;
   std::cout << "\t  pmul\t\t" << std::dec << propfactor_.pmul << std::endl;
 
   // std::cout << "\tRef Conf:\t" << std::endl; // std::bitset<32>(ref_conf_mode_.bytes) << std::endl;
@@ -230,10 +222,10 @@ void TMC429::printSettingsMotor0()
   // std::cout << "\t  mot1r\t\t" << std::bitset<1>(global_parameters_.mot1r) << std::endl;
   
   std::cout << "\tClock Conf:\t" << std::endl; // std::bitset<32>(clk_config_.bytes) << std::endl;
-  std::cout << "\t  usrs\t\t" << std::bitset<3>(clk_config_.clk_config.usrs) << std::endl;
-  std::cout << "\t  ramp_div\t" << std::bitset<4>(clk_config_.clk_config.ramp_div) << std::endl;
+  // std::cout << "\t  usrs\t\t" << std::bitset<3>(clk_config_.clk_config.usrs) << std::endl;
+  // std::cout << "\t  ramp_div\t" << std::bitset<4>(clk_config_.clk_config.ramp_div) << std::endl;
   std::cout << "\t  ramp_div\t" << std::dec << clk_config_.clk_config.ramp_div << std::endl;
-  std::cout << "\t  pulse_div\t" << std::bitset<4>(clk_config_.clk_config.pulse_div) << std::endl;
+  // std::cout << "\t  pulse_div\t" << std::bitset<4>(clk_config_.clk_config.pulse_div) << std::endl;
   std::cout << "\t  pulse_div\t" << std::dec << clk_config_.clk_config.pulse_div << std::endl;
   
 }
@@ -241,10 +233,6 @@ void TMC429::printSettingsMotor0()
 bool TMC429::communicating()
 {
   uint32_t getVer = getVersion();
-  std::cout << "Communicating" << std::endl;
-  std::cout << "Version   : " << getVer << std::endl;
-  std::cout << "MY version: " << VERSION << std::endl;
-
   return (getVer == VERSION);
 }
 
@@ -1370,7 +1358,7 @@ TMC429::MisoDatagram TMC429::writeRead(MosiDatagram mosi_datagram)
 {
   MisoDatagram miso_datagram;
   miso_datagram.bytes = 0x0;
-  std::cout << "TMC429 - Sending  Datagram  : " << std::bitset<32>(mosi_datagram.bytes) << std::endl;
+  // std::cout << "TMC429 - Sending  Datagram  : " << std::bitset<32>(mosi_datagram.bytes) << std::endl;
   digitalWrite(chip_select_pin_, LOW);
   for (int i=(DATAGRAM_SIZE - 1); i>=0; --i)
   {   
@@ -1381,6 +1369,6 @@ TMC429::MisoDatagram TMC429::writeRead(MosiDatagram mosi_datagram)
   }
   digitalWrite(chip_select_pin_, HIGH);
   status_ = miso_datagram.status;
-  std::cout << "TMC429 - Received  Datagram : " << std::bitset<32>(miso_datagram.bytes) << std::endl << std::endl;
+  // std::cout << "TMC429 - Received  Datagram : " << std::bitset<32>(miso_datagram.bytes) << std::endl << std::endl;
   return miso_datagram;
 }
